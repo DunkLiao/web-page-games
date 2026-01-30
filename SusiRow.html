@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>櫻花祭特急 - 迴轉壽司 (全裝置優化版)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap');
+        
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: linear-gradient(to bottom, #fdf2f8 0%, #fbcfe8 50%, #fce7f3 100%);
+            touch-action: none;
+            overflow: hidden;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        .scenery-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .fuji-mountain {
+            position: absolute;
+            bottom: 40%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 120%;
+            height: 150px;
+            background: #94a3b8;
+            clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+            opacity: 0.2;
+        }
+
+        .sakura-tree {
+            position: absolute;
+            bottom: 30%;
+            width: 150px;
+            height: 200px;
+            background: radial-gradient(circle, #f9a8d4 0%, transparent 70%);
+            opacity: 0.5;
+        }
+
+        .petal {
+            position: absolute;
+            background-color: #fbcfe8;
+            border-radius: 150% 0 150% 0;
+            opacity: 0.6;
+            pointer-events: none;
+            animation: fall linear infinite;
+        }
+
+        @keyframes fall {
+            0% { transform: translate(0, -10px) rotate(0deg); opacity: 0; }
+            100% { transform: translate(50px, 100vh) rotate(360deg); opacity: 0; }
+        }
+
+        .track-container {
+            position: relative;
+            width: 100%;
+            flex-grow: 1;
+            min-height: 250px;
+            touch-action: none;
+        }
+
+        #sushi-path-svg {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .rail-line {
+            fill: none;
+            stroke: #451a03;
+            stroke-width: 50;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .rail-inner {
+            fill: none;
+            stroke: #d97706;
+            stroke-width: 3;
+            stroke-dasharray: 10, 10;
+        }
+
+        .train-car {
+            position: absolute;
+            cursor: pointer;
+            z-index: 10;
+            width: 90px;
+            height: 50px;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            /* 修正中心點，讓百分比定位更精準 */
+            transform: translate(-50%, -50%);
+            transform-origin: center center;
+        }
+
+        .price-tag {
+            position: absolute;
+            top: -45px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            font-weight: 900;
+            font-size: 14px;
+            text-shadow: 
+                2px 2px 0 #fff,
+                -2px -2px 0 #fff,
+                2px -2px 0 #fff,
+                -2px 2px 0 #fff,
+                0 0 5px rgba(255,255,255,0.8);
+            z-index: 30;
+            pointer-events: none;
+        }
+
+        .car-body {
+            width: 75px;
+            height: 32px;
+            background: #fff;
+            border-radius: 6px 20px 6px 6px;
+            border-bottom: 4px solid #db2777;
+            position: relative;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .car-body.obstacle {
+            border-bottom: 4px solid #000;
+            background: #444;
+        }
+
+        .plate {
+            width: 55px;
+            height: 8px;
+            border-radius: 50%;
+            position: absolute;
+            top: -8px;
+            box-shadow: 0 2px 0 rgba(0,0,0,0.1);
+        }
+
+        .sushi-icon-wrapper {
+            position: absolute;
+            top: -38px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 28px;
+            z-index: 20;
+        }
+
+        .kid-avatar {
+            font-size: 70px;
+            filter: drop-shadow(0 8px 10px rgba(0,0,0,0.1));
+        }
+
+        .control-panel {
+            background: rgba(255, 255, 255, 0.9);
+            border: 2px solid #db2777;
+            border-radius: 1rem;
+            padding: 0.75rem;
+            font-size: 12px;
+        }
+
+        input[type=range] {
+            accent-color: #db2777;
+            height: 24px;
+        }
+
+        ::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="p-2 sm:p-4">
+
+    <div class="scenery-bg" id="petal-container">
+        <div class="fuji-mountain"></div>
+        <div class="sakura-tree" style="left: -30px;"></div>
+        <div class="sakura-tree" style="right: -30px;"></div>
+    </div>
+
+    <div class="w-full max-w-4xl mx-auto flex flex-col gap-2 z-30">
+        <header class="flex justify-between items-center bg-white/90 backdrop-blur-md p-3 rounded-2xl shadow-lg border-b-2 border-pink-500">
+            <div>
+                <h1 class="text-lg font-black text-pink-800">櫻花特急 🌸</h1>
+                <div id="game-timer" class="text-[10px] bg-pink-600 text-white px-2 py-0.5 rounded-full inline-block mt-1 font-bold">
+                    剩餘: 60s
+                </div>
+            </div>
+            <div class="flex gap-1">
+                <div class="text-center px-2 py-1 bg-pink-50 rounded-xl border border-pink-100">
+                    <div class="text-[8px] text-pink-400 font-bold">已吃</div>
+                    <div id="plate-count" class="text-sm font-black text-pink-700">0/30</div>
+                </div>
+                <div class="text-center px-2 py-1 bg-rose-50 rounded-xl border border-rose-100">
+                    <div class="text-[8px] text-rose-400 font-bold">金額</div>
+                    <div id="total-price" class="text-sm font-black text-rose-700">$0</div>
+                </div>
+            </div>
+        </header>
+
+        <div class="control-panel grid grid-cols-2 sm:grid-cols-4 gap-2 text-pink-900 overflow-hidden">
+            <div class="flex flex-col">
+                <label class="text-[9px] font-bold flex justify-between">
+                    🕒 頻率 <span id="interval-val" class="text-pink-600">2.0s</span>
+                </label>
+                <input type="range" id="spawn-interval" min="1.0" max="5.0" step="1.0" value="2.0">
+            </div>
+            <div class="flex flex-col">
+                <label class="text-[9px] font-bold flex justify-between">
+                    ⚡ 時速 <span id="speed-val" class="text-pink-600">中等</span>
+                </label>
+                <input type="range" id="train-speed" min="1" max="5" step="1" value="3">
+            </div>
+            <div class="flex flex-col">
+                <label class="text-[9px] font-bold flex justify-between">
+                    🎯 目標 <span id="target-val" class="text-pink-600">30盤</span>
+                </label>
+                <input type="range" id="target-plates" min="10" max="50" step="10" value="30">
+            </div>
+            <div class="flex flex-col">
+                <label class="text-[9px] font-bold flex justify-between">
+                    ⏳ 時間 <span id="time-limit-val" class="text-pink-600">60s</span>
+                </label>
+                <input type="range" id="time-limit" min="30" max="180" step="30" value="60">
+            </div>
+        </div>
+    </div>
+
+    <div class="track-container" id="game-area">
+        <svg id="sushi-path-svg" viewBox="0 0 1000 400" preserveAspectRatio="none">
+            <path id="main-path" class="rail-line" d="M -100 120 C 300 120, 700 280, 1100 280" />
+            <path class="rail-inner" d="M -100 120 C 300 120, 700 280, 1100 280" />
+        </svg>
+    </div>
+
+    <div class="flex flex-col items-center w-full relative z-20 pb-4 mt-auto">
+        <div id="kid" class="kid-avatar transition-transform duration-300">👦</div>
+        <div class="mt-2">
+            <button onclick="showBill(true)" class="bg-gradient-to-br from-pink-500 to-rose-700 text-white font-black py-3 px-10 rounded-full text-lg shadow-lg active:scale-95 transition">
+                提前結帳 🧾
+            </button>
+        </div>
+    </div>
+
+    <div id="bill-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+        <div class="bg-white rounded-[2rem] w-full max-w-sm overflow-hidden shadow-2xl border-4 border-pink-500">
+            <div class="bg-pink-600 p-6 text-white text-center">
+                <h2 class="font-black text-2xl">🌸 結算明細 🌸</h2>
+                <p id="bill-subtitle" class="text-[10px] mt-1 opacity-80">感謝您的光臨</p>
+            </div>
+            <div class="p-6">
+                <div id="bill-items" class="space-y-3 mb-6 max-h-48 overflow-y-auto text-pink-900 text-sm"></div>
+                <div class="border-t-2 border-dotted border-pink-100 pt-4 flex justify-between items-baseline mb-6">
+                    <span class="font-bold text-pink-800">總金額</span>
+                    <span id="final-total" class="text-4xl font-black text-pink-600">$0</span>
+                </div>
+                <button onclick="resetGame()" class="w-full bg-pink-800 text-white font-black py-4 rounded-xl text-lg hover:bg-pink-900 active:scale-95 transition">
+                    重新開始
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const sushiTypes = [
+            { name: '鮭魚', emoji: '🍣', price: 40, color: '#ff9a76' },
+            { name: '鮪魚', emoji: '🍱', price: 80, color: '#ff4d4d' },
+            { name: '玉子', emoji: '🍳', price: 30, color: '#fcd34d' },
+            { name: '甜蝦', emoji: '🦐', price: 40, color: '#f9a8d4' },
+            { name: '海膽', emoji: '🍙', price: 120, color: '#dc2626' }
+        ];
+
+        const obstacleTypes = [
+            { name: '芥末炸彈', emoji: '💣', price: -50, color: '#333', isObstacle: true },
+            { name: '壞掉的魚', emoji: '🤢', price: -50, color: '#333', isObstacle: true }
+        ];
+
+        let platesEaten = [];
+        let totalAmount = 0;
+        let isGameOver = false;
+
+        let config = {
+            spawnInterval: 2.0,
+            speedMultiplier: 0.001,
+            targetPlates: 30,
+            timeLimit: 60,
+            currentTime: 60,
+            timerId: null,
+            spawnId: null
+        };
+
+        const gameArea = document.getElementById('game-area');
+        const mainPath = document.getElementById('main-path');
+        const kid = document.getElementById('kid');
+        const plateCountDisplay = document.getElementById('plate-count');
+        const totalPriceDisplay = document.getElementById('total-price');
+        const gameTimerDisplay = document.getElementById('game-timer');
+        const pathLength = mainPath.getTotalLength();
+
+        function createPetals() {
+            const container = document.getElementById('petal-container');
+            for (let i = 0; i < 15; i++) {
+                const petal = document.createElement('div');
+                petal.className = 'petal';
+                const size = Math.random() * 8 + 4;
+                petal.style.width = `${size}px`;
+                petal.style.height = `${size}px`;
+                petal.style.left = `${Math.random() * 100}vw`;
+                petal.style.animationDuration = `${Math.random() * 4 + 4}s`;
+                petal.style.animationDelay = `${Math.random() * 5}s`;
+                container.appendChild(petal);
+            }
+        }
+
+        document.getElementById('spawn-interval').oninput = function() {
+            config.spawnInterval = parseFloat(this.value);
+            document.getElementById('interval-val').innerText = this.value + 's';
+        };
+
+        document.getElementById('train-speed').oninput = function() {
+            const map = [0.0004, 0.0007, 0.001, 0.0015, 0.0025];
+            const labels = ["極慢", "稍慢", "中等", "快速", "閃電"];
+            config.speedMultiplier = map[this.value - 1];
+            document.getElementById('speed-val').innerText = labels[this.value - 1];
+        };
+
+        document.getElementById('target-plates').oninput = function() {
+            config.targetPlates = parseInt(this.value);
+            document.getElementById('target-val').innerText = this.value + '盤';
+            updateDisplay();
+        };
+
+        document.getElementById('time-limit').oninput = function() {
+            config.timeLimit = parseInt(this.value);
+            config.currentTime = config.timeLimit;
+            document.getElementById('time-limit-val').innerText = this.value + 's';
+            gameTimerDisplay.innerText = `剩餘: ${config.currentTime}s`;
+        };
+
+        function spawnSushi(fromRight = false) {
+            if (isGameOver) return;
+            const pool = Math.random() < 0.2 ? obstacleTypes : sushiTypes;
+            const type = pool[Math.floor(Math.random() * pool.length)];
+            
+            const trainCar = document.createElement('div');
+            trainCar.className = 'train-car';
+            
+            const priceColorClass = type.isObstacle ? 'text-red-700' : 'text-slate-900';
+            
+            trainCar.innerHTML = `
+                <div class="price-tag ${priceColorClass}">
+                    ${type.isObstacle ? '⚠️' : '$' + type.price}
+                </div>
+                <div class="car-body ${type.isObstacle ? 'obstacle' : ''}">
+                    <div class="plate" style="background-color: ${type.color}">
+                        <div class="sushi-icon-wrapper">${type.emoji}</div>
+                    </div>
+                </div>
+            `;
+
+            trainCar.onpointerdown = (e) => {
+                e.preventDefault();
+                handleClick(trainCar, type, e);
+            };
+            gameArea.appendChild(trainCar);
+
+            let progress = fromRight ? 1 : 0;
+            const body = trainCar.querySelector('.car-body');
+            const icon = trainCar.querySelector('.sushi-icon-wrapper');
+
+            function animate() {
+                if (isGameOver) { trainCar.remove(); return; }
+                progress += (fromRight ? -config.speedMultiplier : config.speedMultiplier);
+                
+                if (progress < 0 || progress > 1) { trainCar.remove(); return; }
+
+                const point = mainPath.getPointAtLength(progress * pathLength);
+                
+                // 使用百分比定位以確保在不同寬度的桌機螢幕上與 SVG 軌道對齊
+                trainCar.style.left = (point.x / 10) + '%'; 
+                trainCar.style.top = (point.y / 4) + '%';
+                
+                const nextP = mainPath.getPointAtLength(Math.min(pathLength, (progress + 0.01) * pathLength));
+                const prevP = mainPath.getPointAtLength(Math.max(0, (progress - 0.01) * pathLength));
+                const angle = Math.atan2(nextP.y - prevP.y, nextP.x - prevP.x) * 180 / Math.PI;
+
+                // 修正 transform 邏輯，保留 translate(-50%, -50%) 居中效果
+                body.style.transform = `rotate(${fromRight ? angle + 180 : angle}deg)`;
+                icon.style.transform = `translateX(-50%) rotate(${fromRight ? -(angle + 180) : -angle}deg)`;
+
+                if (trainCar.parentNode) requestAnimationFrame(animate);
+            }
+            requestAnimationFrame(animate);
+        }
+
+        function handleClick(element, type, event) {
+            if (isGameOver) return;
+            if (type.isObstacle) {
+                totalAmount = Math.max(0, totalAmount + type.price);
+                if (platesEaten.length > 0) platesEaten.pop();
+                kid.innerText = '😭';
+            } else {
+                platesEaten.push(type);
+                totalAmount += type.price;
+                kid.innerText = '😋';
+                kid.style.transform = "scale(1.3)";
+            }
+            updateDisplay();
+            element.remove();
+            
+            if (platesEaten.length >= config.targetPlates) showBill(false, "🌸 目標達成！");
+            
+            setTimeout(() => {
+                kid.innerText = '👦';
+                kid.style.transform = "scale(1)";
+            }, 600);
+        }
+
+        function updateDisplay() {
+            plateCountDisplay.innerText = `${platesEaten.length}/${config.targetPlates}`;
+            totalPriceDisplay.innerText = `$${totalAmount}`;
+        }
+
+        function startTimer() {
+            config.timerId = setInterval(() => {
+                config.currentTime--;
+                gameTimerDisplay.innerText = `剩餘: ${config.currentTime}s`;
+                if (config.currentTime <= 0) showBill(false, "時間終了！");
+            }, 1000);
+        }
+
+        function showBill(manual = false, reason = "") {
+            isGameOver = true;
+            clearInterval(config.timerId);
+            clearTimeout(config.spawnId);
+            
+            const modal = document.getElementById('bill-modal');
+            const itemsList = document.getElementById('bill-items');
+            const finalTotal = document.getElementById('final-total');
+            const subtitle = document.getElementById('bill-subtitle');
+
+            subtitle.innerText = reason || "感謝您的光臨";
+            const stats = {};
+            platesEaten.forEach(s => stats[s.name] = (stats[s.name] || 0) + 1);
+
+            itemsList.innerHTML = '';
+            for (const [name, count] of Object.entries(stats)) {
+                const sushiType = sushiTypes.find(s => s.name === name);
+                const row = document.createElement('div');
+                row.className = 'flex justify-between font-bold';
+                row.innerHTML = `<span>${sushiType.emoji} ${name} x${count}</span><span>$${sushiType.price * count}</span>`;
+                itemsList.appendChild(row);
+            }
+            finalTotal.innerText = `$${totalAmount}`;
+            modal.classList.remove('hidden');
+        }
+
+        function resetGame() {
+            platesEaten = [];
+            totalAmount = 0;
+            isGameOver = false;
+            config.currentTime = config.timeLimit;
+            updateDisplay();
+            gameTimerDisplay.innerText = `剩餘: ${config.currentTime}s`;
+            document.getElementById('bill-modal').classList.add('hidden');
+            document.querySelectorAll('.train-car').forEach(c => c.remove());
+            
+            clearInterval(config.timerId);
+            clearTimeout(config.spawnId);
+            startTimer();
+            gameLoop();
+        }
+
+        function gameLoop() {
+            if (isGameOver) return;
+            spawnSushi(Math.random() > 0.5);
+            config.spawnId = setTimeout(gameLoop, config.spawnInterval * 1000);
+        }
+
+        window.onload = () => {
+            createPetals();
+            startTimer();
+            gameLoop();
+        };
+    </script>
+</body>
+</html>

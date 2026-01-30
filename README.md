@@ -8,10 +8,17 @@
 
 ### 1. 貓與鼠：藝術大冒險 (Catch Cat Games)
 
-- **文件**: `CatchCatGames.html`
-- **描述**: 一個互動式網頁遊戲
-- **技術**: HTML5 Canvas, Tailwind CSS
-- **語言**: 繁體中文
+    - **文件**: `CatchCatGames.html`
+    - **描述**: 一個互動式網頁遊戲
+    - **技術**: HTML5 Canvas, Tailwind CSS
+    - **語言**: 繁體中文
+
+### 2. 櫻花祭特急 - 迴轉壽司 (SusiRow)
+
+    - **文件**: `SusiRow.html`
+    - **描述**: 以櫻花祭為主題的手機優化迴轉壽司遊戲，玩家需在限定時間內收集壽司並避開障礙，挑戰最高分。
+    - **技術**: HTML5, Tailwind CSS, JavaScript
+    - **語言**: 繁體中文
 
 ## 🛠️ 技術棧
 
@@ -25,6 +32,7 @@
 ```
 web-page-games/
 ├── CatchCatGames.html        # 貓與鼠遊戲
+├── SusiRow.html              # 櫻花祭特急 - 迴轉壽司
 └── README.md                 # 說明文件
 ```
 
