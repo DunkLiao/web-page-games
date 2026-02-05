@@ -20,6 +20,13 @@
     - **技術**: HTML5, Tailwind CSS, JavaScript
     - **語言**: 繁體中文
 
+### 3. 撿紅點 - 大正浪漫綺譚 (Pick Red Poker)
+
+    - **文件**: `PickRedPocker.html`
+    - **描述**: 大正浪漫風格的撿紅點紙牌遊戲。玩家與AI對戰，透過配對牌組獲取紅色花色(♥♦)的分數。小牌和為10配對，大牌相同點數配對。支援1/3/5局制，結合傳統台灣紙牌遊戲與復古日式美學。
+    - **技術**: HTML5, Tailwind CSS, JavaScript
+    - **語言**: 繁體中文
+
 ## 🛠️ 技術棧
 
 - **前端框架**: HTML5, CSS3, JavaScript
@@ -33,6 +40,8 @@
 web-page-games/
 ├── CatchCatGames.html        # 貓與鼠遊戲
 ├── SusiRow.html              # 櫻花祭特急 - 迴轉壽司
+├── PickRedPocker.html        # 撿紅點 - 大正浪漫綺譚
+├── index.html                # 遊戲集合首頁
 └── README.md                 # 說明文件
 ```
 
@@ -64,4 +73,4 @@ VibeCoding Team
 
 ---
 
-**最後更新**: 2026年1月30日
+**最後更新**: 2026年2月5日

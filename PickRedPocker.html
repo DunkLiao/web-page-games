@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>撿紅點 - 大正浪漫綺譚</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700;900&display=swap');
+        
+        :root {
+            --taisho-enji: #8e2a2a; /* 胭脂紅 */
+            --taisho-cream: #f4e9d5; /* 和紙米色 */
+            --taisho-indigo: #1a2a3a; /* 深藍/靛青 */
+            --taisho-gold: #c6a052; /* 霧金 */
+            --taisho-purple: #4a2a4a; /* 矢絣紫 */
+        }
+
+        body {
+            font-family: 'Noto Serif TC', serif;
+            background-color: var(--taisho-indigo);
+            /* 矢絣 (Yagasuri) 紋樣背景 */
+            background-image: 
+                linear-gradient(45deg, rgba(255,255,255,0.03) 25%, transparent 25%, transparent 75%, rgba(255,255,255,0.03) 75%, rgba(255,255,255,0.03)),
+                linear-gradient(-45deg, rgba(255,255,255,0.03) 25%, transparent 25%, transparent 75%, rgba(255,255,255,0.03) 75%, rgba(255,255,255,0.03));
+            background-size: 60px 60px;
+            color: var(--taisho-cream);
+            overflow-x: hidden;
+            touch-action: manipulation;
+        }
+
+        /* 華麗大正裝飾邊框 */
+        .taisho-panel {
+            background-color: #2a1a1a;
+            background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M20 20L0 0h40L20 20z' fill='%233a2a2a' fill-opacity='0.4' fill-rule='evenodd'/%3E%3C/svg%3E");
+            border: 8px double var(--taisho-gold);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+            position: relative;
+        }
+
+        /* 四角裝飾 */
+        .corner-deco {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--taisho-gold);
+            z-index: 10;
+        }
+        .tl { top: -4px; left: -4px; border-right: none; border-bottom: none; }
+        .tr { top: -4px; right: -4px; border-left: none; border-bottom: none; }
+        .bl { bottom: -4px; left: -4px; border-right: none; border-top: none; }
+        .br { bottom: -4px; right: -4px; border-left: none; border-top: none; }
+
+        .playing-card {
+            aspect-ratio: 2 / 3;
+            perspective: 1000px;
+            transition: transform 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .playing-card:hover {
+            transform: translateY(-12px) rotate(2deg);
+        }
+
+        .playing-card.selected {
+            transform: translateY(-25px) scale(1.1);
+            filter: drop-shadow(0 0 20px var(--taisho-gold));
+        }
+
+        .card-inner {
+            background: var(--taisho-cream);
+            border-radius: 4px;
+            height: 100%;
+            width: 100%;
+            border: 2px solid #dcd0b8;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 6px;
+            position: relative;
+            color: #2a201a;
+        }
+
+        .card-back {
+            background-color: var(--taisho-enji);
+            /* 復古大正花紋 */
+            background-image: radial-gradient(var(--taisho-gold) 1px, transparent 1px);
+            background-size: 12px 12px;
+            border: 4px solid var(--taisho-cream);
+        }
+
+        .suit-red { color: var(--taisho-enji); }
+        .suit-black { color: var(--taisho-indigo); }
+
+        .btn-taisho {
+            background: var(--taisho-enji);
+            color: var(--taisho-cream);
+            border: 2px solid var(--taisho-gold);
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-taisho:hover {
+            background: var(--taisho-gold);
+            color: var(--taisho-enji);
+        }
+
+        .btn-outline {
+            border: 1px solid var(--taisho-gold);
+            background: rgba(255,255,255,0.05);
+            color: var(--taisho-gold);
+        }
+
+        .btn-outline.active {
+            background: var(--taisho-gold);
+            color: var(--taisho-indigo);
+            font-weight: 900;
+        }
+
+        .vintage-label {
+            writing-mode: vertical-rl;
+            text-orientation: upright;
+            letter-spacing: 0.2em;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .animate-fade {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- 頂部資訊欄：大正風格 -->
+    <header class="p-6 bg-[#2a1a1a] border-b-4 border-[#c6a052] flex justify-between items-center sticky top-0 z-40 shadow-xl">
+        <div class="flex items-center gap-6">
+            <div class="hidden sm:block vintage-label text-xs border-r border-gold/30 pr-2 h-16">大正浪漫</div>
+            <div class="flex flex-col">
+                <h1 class="text-3xl font-black tracking-widest text-[#c6a052] italic" style="font-family: 'Noto Serif TC', serif;">
+                    紅點<span class="text-white opacity-50">の</span>綺譚
+                </h1>
+                <div class="text-[10px] uppercase tracking-[0.3em] text-[#8e2a2a] font-bold">Pick Red Points - Taisho Era</div>
+            </div>
+        </div>
+
+        <div class="flex gap-4 sm:gap-10 items-center">
+            <div class="text-center">
+                <p class="text-[10px] uppercase text-zinc-500 mb-1">當前局數</p>
+                <p class="font-black text-[#c6a052] text-xl" id="round-display">第 壹 局</p>
+            </div>
+            <div class="h-12 w-px bg-[#c6a052]/30"></div>
+            <div class="flex gap-6">
+                <div class="text-center">
+                    <p class="text-[10px] uppercase text-zinc-500 mb-1">對手總分</p>
+                    <p class="text-2xl font-black text-white" id="total-ai-score">0</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-[10px] uppercase text-zinc-500 mb-1">玩家總分</p>
+                    <p class="text-2xl font-black text-[#8e2a2a]" id="total-player-score">0</p>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow flex flex-col p-4 max-w-6xl mx-auto w-full gap-6">
+        
+        <!-- 當前分數狀態 -->
+        <div class="flex justify-center gap-12 text-sm font-bold tracking-widest">
+            <span class="flex items-center gap-2 text-zinc-400">對手：<b id="ai-score" class="text-white text-lg">0</b></span>
+            <span class="text-[#c6a052] opacity-30">◆</span>
+            <span class="flex items-center gap-2 text-zinc-400">剩餘牌數：<b id="deck-count" class="text-[#c6a052] text-lg">0</b></span>
+            <span class="text-[#c6a052] opacity-30">◆</span>
+            <span class="flex items-center gap-2 text-zinc-400">玩家：<b id="player-score" class="text-[#8e2a2a] text-lg">0</b></span>
+        </div>
+
+        <!-- 對手區域 -->
+        <div class="flex flex-center justify-center opacity-80 h-24">
+            <div id="ai-hand" class="flex justify-center -space-x-12 h-full"></div>
+        </div>
+
+        <!-- 牌桌操作區 -->
+        <div class="taisho-panel rounded-lg p-10 flex-grow flex flex-col items-center justify-center min-h-[400px]">
+            <div class="corner-deco tl"></div><div class="corner-deco tr"></div><div class="corner-deco bl"></div><div class="corner-deco br"></div>
+            
+            <div id="table-cards" class="grid grid-cols-4 sm:grid-cols-6 gap-6 justify-items-center w-full max-w-4xl">
+                <!-- 桌面牌 -->
+            </div>
+            
+            <!-- 翻牌互動 -->
+            <div class="mt-12 flex items-center gap-16">
+                <div id="deck-pile" class="playing-card w-24 relative group">
+                    <div class="card-inner card-back group-hover:scale-105 transition-transform border-[#c6a052]"></div>
+                    <div class="absolute inset-0 flex items-center justify-center text-white/10 font-black text-xl select-none">山札</div>
+                </div>
+                <div id="current-flip" class="w-24 h-36 border-2 border-dashed border-[#c6a052]/50 rounded flex items-center justify-center bg-black/20">
+                    <span class="text-[#c6a052]/30 text-xs font-bold tracking-widest">翻開</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 玩家區域 -->
+        <div class="mt-auto flex flex-col items-center gap-6">
+            <div id="turn-indicator" class="px-10 py-2 text-sm font-black tracking-[0.5em] border-y-2 border-[#c6a052] text-[#c6a052] bg-black/40">
+                順序待機中
+            </div>
+            <div id="player-hand" class="flex justify-center flex-wrap -space-x-10 h-44 pt-4 transition-all hover:-space-x-4">
+                <!-- 玩家牌 -->
+            </div>
+        </div>
+    </main>
+
+    <!-- 初始設定彈窗 -->
+    <div id="setup-modal" class="fixed inset-0 bg-[#1a0a0a]/95 z-50 flex items-center justify-center">
+        <div class="taisho-panel p-12 rounded-lg max-w-md w-full text-center">
+            <div class="corner-deco tl"></div><div class="corner-deco tr"></div><div class="corner-deco bl"></div><div class="corner-deco br"></div>
+            <h2 class="text-4xl font-black mb-8 text-[#c6a052] tracking-widest">設定局數</h2>
+            
+            <div class="flex justify-center gap-4 mb-12">
+                <button onclick="setRounds(1)" class="round-btn btn-outline px-8 py-3 rounded-full active" data-val="1">壹局</button>
+                <button onclick="setRounds(3)" class="round-btn btn-outline px-8 py-3 rounded-full" data-val="3">參局</button>
+                <button onclick="setRounds(5)" class="round-btn btn-outline px-8 py-3 rounded-full" data-val="5">伍局</button>
+            </div>
+
+            <button onclick="startGame()" class="w-full py-5 btn-taisho rounded-sm font-black text-2xl tracking-[0.5em] shadow-lg">
+                遊戲開始
+            </button>
+        </div>
+    </div>
+
+    <!-- 結算彈窗 -->
+    <div id="modal-overlay" class="fixed inset-0 bg-black/95 z-50 flex items-center justify-center hidden">
+        <div class="taisho-panel p-12 rounded-lg max-w-md w-full text-center">
+            <div class="corner-deco tl"></div><div class="corner-deco tr"></div><div class="corner-deco bl"></div><div class="corner-deco br"></div>
+            <h2 class="text-4xl font-black mb-4 text-[#c6a052] tracking-widest" id="result-title">勝負揭曉</h2>
+            
+            <div class="my-10 space-y-6">
+                <div class="flex justify-between items-center px-6 py-4 bg-white/5 border-l-4 border-[#8e2a2a]">
+                    <span class="text-[#c6a052] font-bold tracking-widest text-lg">玩家總分</span>
+                    <span id="final-player-score" class="text-3xl font-black text-white">0</span>
+                </div>
+                <div class="flex justify-between items-center px-6 py-4 bg-white/5 border-l-4 border-zinc-600">
+                    <span class="text-zinc-500 font-bold tracking-widest text-lg">對手總分</span>
+                    <span id="final-ai-score" class="text-3xl font-black text-zinc-400">0</span>
+                </div>
+            </div>
+            
+            <p id="result-message" class="mb-10 text-[#c6a052] text-sm tracking-widest leading-loose"></p>
+            
+            <button id="next-action-btn" onclick="handleNextStep()" class="w-full py-5 btn-taisho rounded-sm font-black text-xl tracking-[0.3em]">
+                進入下一階段
+            </button>
+        </div>
+    </div>
+
+    <!-- 提示框 -->
+    <div id="toast" class="fixed bottom-12 left-1/2 -translate-x-1/2 px-10 py-4 bg-[#8e2a2a] text-[#f4e9d5] font-black tracking-widest text-sm opacity-0 transition-all pointer-events-none z-50 border-2 border-[#c6a052] shadow-2xl">
+        系統訊息
+    </div>
+
+    <script>
+        // 牌組定義
+        const suits = [
+            { name: 'hearts', symbol: '♥', color: 'red' },
+            { name: 'diamonds', symbol: '♦', color: 'red' },
+            { name: 'clubs', symbol: '♣', color: 'black' },
+            { name: 'spades', symbol: '♠', color: 'black' }
+        ];
+
+        const values = [
+            { label: 'A', power: 1 }, { label: '2', power: 2 }, { label: '3', power: 3 },
+            { label: '4', power: 4 }, { label: '5', power: 5 }, { label: '6', power: 6 },
+            { label: '7', power: 7 }, { label: '8', power: 8 }, { label: '9', power: 9 },
+            { label: '10', power: 10 }, { label: 'J', power: 11 }, { label: 'Q', power: 12 },
+            { label: 'K', power: 13 }
+        ];
+
+        const chineseNums = ["零", "壹", "貳", "參", "肆", "伍"];
+
+        let gameSettings = {
+            totalRounds: 1,
+            currentRound: 1,
+            totalPlayerScore: 0,
+            totalAiScore: 0
+        };
+
+        let state = {
+            deck: [],
+            playerHand: [],
+            aiHand: [],
+            tableCards: [],
+            roundPlayerScore: 0,
+            roundAiScore: 0,
+            selectedCardIndex: null,
+            isPlayerTurn: true,
+            isProcessing: false
+        };
+
+        function setRounds(r) {
+            gameSettings.totalRounds = r;
+            document.querySelectorAll('.round-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (parseInt(btn.dataset.val) === r) btn.classList.add('active');
+            });
+        }
+
+        function createDeck() {
+            const deck = [];
+            for (const suit of suits) {
+                for (const val of values) {
+                    deck.push({ ...suit, ...val, id: Math.random().toString(36).substr(2, 9) });
+                }
+            }
+            return deck.sort(() => Math.random() - 0.5);
+        }
+
+        function getCardScore(card) {
+            if (card.color !== 'red') return 0;
+            if (card.label === 'A') return 20;
+            if (['9', '10', 'J', 'Q', 'K'].includes(card.label)) return 10;
+            return card.power;
+        }
+
+        function canMatch(card1, card2) {
+            if (!card1 || !card2) return false;
+            if (card1.power <= 9 && card2.power <= 9) return card1.power + card2.power === 10;
+            if (card1.power >= 10 && card2.power >= 10) return card1.power === card2.power;
+            return false;
+        }
+
+        function renderCard(card, isHidden = false, isSelected = false) {
+            if (isHidden) {
+                return `<div class="playing-card w-16 sm:w-20"><div class="card-inner card-back"></div></div>`;
+            }
+            const colorClass = card.color === 'red' ? 'suit-red' : 'suit-black';
+            const selectedClass = isSelected ? 'selected' : '';
+            return `
+                <div class="playing-card w-16 sm:w-24 ${selectedClass}" data-id="${card.id}">
+                    <div class="card-inner ${colorClass} shadow-md">
+                        <div class="flex flex-col items-start leading-none font-black">
+                            <span class="text-xl">${card.label}</span>
+                            <span class="text-sm">${card.symbol}</span>
+                        </div>
+                        <div class="text-center text-4xl opacity-[0.08] absolute inset-0 flex items-center justify-center pointer-events-none">
+                            ${card.symbol}
+                        </div>
+                        <div class="flex flex-col items-end rotate-180 leading-none font-black">
+                            <span class="text-xl">${card.label}</span>
+                            <span class="text-sm">${card.symbol}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.style.opacity = '1';
+            t.style.bottom = '60px';
+            setTimeout(() => {
+                t.style.opacity = '0';
+                t.style.bottom = '30px';
+            }, 2500);
+        }
+
+        function updateUI() {
+            document.getElementById('player-hand').innerHTML = state.playerHand.map((c, i) => 
+                `<div onclick="handlePlayerCardClick(${i})">${renderCard(c, false, state.selectedCardIndex === i)}</div>`
+            ).join('');
+
+            document.getElementById('ai-hand').innerHTML = state.aiHand.map(() => renderCard({}, true)).join('');
+            document.getElementById('table-cards').innerHTML = state.tableCards.map(c => 
+                `<div onclick="handleTableCardClick('${c.id}')">${renderCard(c)}</div>`
+            ).join('');
+
+            document.getElementById('deck-count').textContent = state.deck.length;
+            document.getElementById('player-score').textContent = state.roundPlayerScore;
+            document.getElementById('ai-score').textContent = state.roundAiScore;
+            
+            document.getElementById('total-player-score').textContent = gameSettings.totalPlayerScore + state.roundPlayerScore;
+            document.getElementById('total-ai-score').textContent = gameSettings.totalAiScore + state.roundAiScore;
+            document.getElementById('round-display').textContent = `第 ${chineseNums[gameSettings.currentRound] || gameSettings.currentRound} 局`;
+
+            const turnEl = document.getElementById('turn-indicator');
+            if (state.isPlayerTurn) {
+                turnEl.textContent = "玩家手番";
+                turnEl.className = "px-10 py-2 text-sm font-black tracking-[0.5em] border-y-2 border-[#8e2a2a] text-[#8e2a2a] bg-[#f4e9d5]/10";
+            } else {
+                turnEl.textContent = "對手思考";
+                turnEl.className = "px-10 py-2 text-sm font-black tracking-[0.5em] border-y-2 border-zinc-500 text-zinc-500 bg-black/40";
+            }
+        }
+
+        async function handlePlayerCardClick(index) {
+            if (!state.isPlayerTurn || state.isProcessing) return;
+            state.selectedCardIndex = (state.selectedCardIndex === index) ? null : index;
+            updateUI();
+        }
+
+        async function handleTableCardClick(cardId) {
+            if (!state.isPlayerTurn || state.isProcessing || state.selectedCardIndex === null) return;
+            const handCard = state.playerHand[state.selectedCardIndex];
+            const tableCard = state.tableCards.find(c => c.id === cardId);
+
+            if (canMatch(handCard, tableCard)) {
+                await executeMove(state.selectedCardIndex, tableCard);
+            } else {
+                showToast("無效的配對組合");
+            }
+        }
+
+        document.getElementById('deck-pile').addEventListener('click', async () => {
+            if (!state.isPlayerTurn || state.isProcessing || state.selectedCardIndex === null) return;
+            const handCard = state.playerHand[state.selectedCardIndex];
+            const hasMatch = state.tableCards.some(tc => canMatch(handCard, tc));
+            if (hasMatch) {
+                showToast("桌上尚有可配對之牌");
+                return;
+            }
+            await executeMove(state.selectedCardIndex, null);
+        });
+
+        async function executeMove(handIndex, tableCard) {
+            state.isProcessing = true;
+            const isPlayer = state.isPlayerTurn;
+            const hand = isPlayer ? state.playerHand : state.aiHand;
+            const handCard = hand.splice(handIndex, 1)[0];
+            
+            if (tableCard) {
+                state.tableCards = state.tableCards.filter(c => c.id !== tableCard.id);
+                const pts = getCardScore(handCard) + getCardScore(tableCard);
+                if (isPlayer) state.roundPlayerScore += pts; else state.roundAiScore += pts;
+                showToast(`${isPlayer ? '玩家' : '對手'} 獲得 ${pts} 點`);
+            } else {
+                state.tableCards.push(handCard);
+            }
+
+            state.selectedCardIndex = null;
+            updateUI();
+            await sleep(600);
+
+            if (state.deck.length > 0) {
+                const flipCard = state.deck.pop();
+                document.getElementById('current-flip').innerHTML = renderCard(flipCard);
+                await sleep(800);
+
+                const matchOnTable = state.tableCards.find(tc => canMatch(flipCard, tc));
+                if (matchOnTable) {
+                    state.tableCards = state.tableCards.filter(c => c.id !== matchOnTable.id);
+                    const pts = getCardScore(flipCard) + getCardScore(matchOnTable);
+                    if (isPlayer) state.roundPlayerScore += pts; else state.roundAiScore += pts;
+                    showToast(`翻牌配對：加 ${pts} 點`);
+                } else {
+                    state.tableCards.push(flipCard);
+                }
+                await sleep(600);
+                document.getElementById('current-flip').innerHTML = '<span class="text-[#c6a052]/30 text-xs font-bold tracking-widest">翻開</span>';
+            }
+
+            if (state.playerHand.length === 0 && state.aiHand.length === 0) {
+                endRound();
+                return;
+            }
+
+            state.isPlayerTurn = !state.isPlayerTurn;
+            state.isProcessing = false;
+            updateUI();
+            if (!state.isPlayerTurn) setTimeout(aiMove, 1000);
+        }
+
+        async function aiMove() {
+            let best = { i: 0, tc: null, s: -1 };
+            for (let i = 0; i < state.aiHand.length; i++) {
+                let matched = false;
+                for (let tc of state.tableCards) {
+                    if (canMatch(state.aiHand[i], tc)) {
+                        const s = getCardScore(state.aiHand[i]) + getCardScore(tc);
+                        if (s > best.s) best = { i, tc, s };
+                        matched = true;
+                    }
+                }
+                if (!matched && best.s === -1) best = { i, tc: null, s: -1 };
+            }
+            await executeMove(best.i, best.tc);
+        }
+
+        function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+        function startGame() {
+            gameSettings.totalPlayerScore = 0;
+            gameSettings.totalAiScore = 0;
+            gameSettings.currentRound = 1;
+            document.getElementById('setup-modal').classList.add('hidden');
+            initRound();
+        }
+
+        function initRound() {
+            const d = createDeck();
+            state = {
+                deck: d.slice(28),
+                playerHand: d.slice(0, 12),
+                aiHand: d.slice(12, 24),
+                tableCards: d.slice(24, 28),
+                roundPlayerScore: 0,
+                roundAiScore: 0,
+                selectedCardIndex: null,
+                isPlayerTurn: true,
+                isProcessing: false
+            };
+            updateUI();
+            showToast(`第 ${chineseNums[gameSettings.currentRound]} 局，開戰`);
+        }
+
+        function endRound() {
+            gameSettings.totalPlayerScore += state.roundPlayerScore;
+            gameSettings.totalAiScore += state.roundAiScore;
+            
+            const isLastRound = gameSettings.currentRound >= gameSettings.totalRounds;
+            const modal = document.getElementById('modal-overlay');
+            const title = document.getElementById('result-title');
+            const btn = document.getElementById('next-action-btn');
+            
+            modal.classList.remove('hidden');
+            document.getElementById('final-player-score').textContent = gameSettings.totalPlayerScore;
+            document.getElementById('final-ai-score').textContent = gameSettings.totalAiScore;
+
+            if (!isLastRound) {
+                title.textContent = `第 ${chineseNums[gameSettings.currentRound]} 局 完`;
+                btn.textContent = "下一局 準備";
+                document.getElementById('result-message').textContent = "此局戰畢，雙方積分已計入總譜。";
+            } else {
+                title.textContent = "最終勝負";
+                btn.textContent = "重返大正";
+                const p = gameSettings.totalPlayerScore;
+                const a = gameSettings.totalAiScore;
+                document.getElementById('result-message').textContent = p > a ? "在此次綺譚中，你贏得了最終的輝煌。" : (p < a ? "命運並不在你這邊，此役由對手取勝。" : "勢均力敵，這場傳奇將以平局收場。");
+            }
+        }
+
+        function handleNextStep() {
+            document.getElementById('modal-overlay').classList.add('hidden');
+            if (gameSettings.currentRound < gameSettings.totalRounds) {
+                gameSettings.currentRound++;
+                initRound();
+            } else {
+                document.getElementById('setup-modal').classList.remove('hidden');
+            }
+        }
+    </script>
+</body>
+</html>
