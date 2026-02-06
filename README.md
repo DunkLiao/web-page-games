@@ -27,6 +27,13 @@
     - **技術**: HTML5, Tailwind CSS, JavaScript
     - **語言**: 繁體中文
 
+### 4. 夏日邦迪海灘丟水球 - VB 版 (Bondi VB Toss)
+
+    - **文件**: `bondi-vb-toss.html`
+    - **描述**: 邦迪海灘丟水球小遊戲，玩家點擊/觸控發射水球，擊中飛行中的 VB 啤酒罐以獲取分數並刷新最高紀錄。
+    - **技術**: HTML5 Canvas, Tailwind CSS, JavaScript
+    - **語言**: 繁體中文
+
 ## 🛠️ 技術棧
 
 - **前端框架**: HTML5, CSS3, JavaScript
@@ -41,6 +48,7 @@ web-page-games/
 ├── CatchCatGames.html        # 貓與鼠遊戲
 ├── SusiRow.html              # 櫻花祭特急 - 迴轉壽司
 ├── PickRedPocker.html        # 撿紅點 - 大正浪漫綺譚
+├── bondi-vb-toss.html         # 夏日邦迪海灘丟水球 - VB 版
 ├── index.html                # 遊戲集合首頁
 └── README.md                 # 說明文件
 ```

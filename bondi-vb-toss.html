@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>夏日邦迪海灘丟水球 - VB 版</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #f3e5ab;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+            touch-action: none;
+            z-index: 1;
+        }
+        /* 互動層：確保點擊絕對有效 */
+        #interaction-trigger {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 5;
+            cursor: crosshair;
+        }
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 15px;
+        }
+        .stats-box {
+            pointer-events: auto;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(5px);
+            padding: 10px 15px;
+            border-radius: 12px;
+            border: 2px solid #005a3c;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        #overlay-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 43, 31, 0.75);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+        .modal {
+            background: white;
+            padding: 30px;
+            border-radius: 24px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            width: 85%;
+            max-width: 340px;
+            border-bottom: 8px solid #005a3c;
+            pointer-events: auto;
+        }
+        input[type=range] {
+            width: 100%;
+            cursor: pointer;
+            accent-color: #005a3c;
+        }
+        .btn-vb {
+            background-color: #005a3c;
+            color: white;
+            transition: all 0.2s;
+        }
+        .btn-vb:active {
+            transform: scale(0.95);
+            background-color: #00442d;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="interaction-trigger"></div>
+
+    <div id="overlay-screen">
+        <div class="modal" id="start-modal">
+            <h2 class="text-3xl font-black mb-1 text-green-800">BONDI SUMMER</h2>
+            <p class="text-xs font-bold text-red-600 mb-3 tracking-widest uppercase">Water Balloon Toss</p>
+            
+            <div class="mb-6 text-left bg-gray-50 p-3 rounded-lg">
+                <p class="text-gray-700 font-bold mb-2 text-center text-sm">設定 VB 啤酒移動速度</p>
+                <div class="flex items-center gap-4">
+                    <span class="text-xs text-gray-400">慢</span>
+                    <input type="range" id="speed-slider" min="3" max="20" value="7">
+                    <span class="text-xs text-gray-400">快</span>
+                </div>
+            </div>
+            
+            <p class="mb-6 text-gray-500 text-sm leading-relaxed">
+                雪梨邦迪海灘到了！<br>
+                在<b>畫面任何位置</b>點擊發射水球<br>
+                目標是那些亂飛的 <b>VB 啤酒罐</b>！
+            </p>
+            
+            <button id="start-btn" class="btn-vb w-full py-4 rounded-xl font-bold text-xl shadow-lg">
+                G'DAY MATE! 開始
+            </button>
+        </div>
+    </div>
+
+    <div id="ui-layer">
+        <div class="flex justify-between items-start">
+            <div class="stats-box">
+                <div class="text-lg font-black text-green-800">Score: <span id="score">0</span></div>
+                <div class="text-xs text-red-600 font-black">Ammo: <span id="ammo">10</span></div>
+            </div>
+            <div class="stats-box text-right">
+                <div class="text-[10px] text-gray-500 font-bold uppercase tracking-tighter">Bondi Record</div>
+                <div class="text-lg font-black text-yellow-600" id="high-score">0</div>
+            </div>
+        </div>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const trigger = document.getElementById('interaction-trigger');
+        const ctx = canvas.getContext('2d');
+        const scoreEl = document.getElementById('score');
+        const ammoEl = document.getElementById('ammo');
+        const highScoreEl = document.getElementById('high-score');
+        const overlay = document.getElementById('overlay-screen');
+        const startBtn = document.getElementById('start-btn');
+        const speedSlider = document.getElementById('speed-slider');
+
+        let gameState = 'START';
+        let score = 0;
+        let highScore = 0;
+        let ammo = 10;
+        let balloons = [];
+        let splats = [];
+        let ripples = [];
+        let waveOffset = 0;
+        
+        const target = {
+            x: 0,
+            y: 0,
+            vx: 0,
+            vy: 0,
+            width: 50,
+            height: 85,
+            baseSpeed: 7
+        };
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            if (gameState === 'START') {
+                target.x = canvas.width / 2 - target.width / 2;
+                target.y = canvas.height * 0.25;
+            }
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // 核心點擊處理：直接綁定在觸發層上
+        trigger.addEventListener('pointerdown', (e) => {
+            if (gameState !== 'PLAYING') return;
+
+            // 如果點擊的是 UI 區域，跳過
+            if (e.target !== trigger) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            if (ammo > 0) {
+                // 加入一點擊波紋效果回饋
+                ripples.push({ x, y, r: 0, a: 1 });
+                launchBalloon(x, y);
+            }
+        });
+
+        startBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            resetAndStart();
+        });
+
+        function resetAndStart() {
+            score = 0;
+            ammo = 10;
+            balloons = [];
+            splats = [];
+            ripples = [];
+            target.baseSpeed = parseInt(speedSlider.value);
+            target.x = canvas.width / 2 - target.width / 2;
+            target.y = canvas.height * 0.2;
+            
+            // 隨機發射方向
+            const angle = Math.random() * Math.PI * 2;
+            target.vx = Math.cos(angle) * target.baseSpeed;
+            target.vy = Math.sin(angle) * target.baseSpeed;
+
+            gameState = 'PLAYING';
+            overlay.style.display = 'none';
+            trigger.style.pointerEvents = 'auto'; 
+            updateUI();
+        }
+
+        function updateUI() {
+            scoreEl.innerText = score;
+            ammoEl.innerText = ammo;
+            highScoreEl.innerText = highScore;
+        }
+
+        function launchBalloon(tx, ty) {
+            ammo--;
+            updateUI();
+
+            const startX = canvas.width / 2;
+            const startY = canvas.height - 50;
+            const dx = tx - startX;
+            const dy = ty - startY;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            
+            const power = 22; // 稍微增加力道
+            const vx = (dx / dist) * power;
+            const vy = (dy / dist) * power;
+
+            balloons.push({
+                x: startX,
+                y: startY,
+                vx: vx,
+                vy: vy,
+                gravity: 0.3,
+                radius: 12,
+                color: '#ffeb3b'
+            });
+        }
+
+        function createSplat(x, y, color) {
+            for (let i = 0; i < 10; i++) {
+                splats.push({
+                    x, y, color,
+                    size: Math.random() * 5 + 2,
+                    vx: (Math.random() - 0.5) * 12,
+                    vy: (Math.random() - 0.5) * 12,
+                    life: 1.0
+                });
+            }
+        }
+
+        function drawBondiBeach() {
+            // 天空
+            const sky = ctx.createLinearGradient(0, 0, 0, canvas.height * 0.4);
+            sky.addColorStop(0, '#00b4db');
+            sky.addColorStop(1, '#6dd5ed');
+            ctx.fillStyle = sky;
+            ctx.fillRect(0, 0, canvas.width, canvas.height * 0.4);
+
+            // 海水
+            const sea = ctx.createLinearGradient(0, canvas.height * 0.4, 0, canvas.height * 0.7);
+            sea.addColorStop(0, '#008080');
+            sea.addColorStop(1, '#20b2aa');
+            ctx.fillStyle = sea;
+            ctx.fillRect(0, canvas.height * 0.4, canvas.width, canvas.height * 0.3);
+
+            // 海浪
+            ctx.beginPath();
+            ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+            ctx.lineWidth = 4;
+            for(let i = 0; i <= canvas.width + 20; i += 20) {
+                const y = Math.sin((i + waveOffset) * 0.04) * 6 + canvas.height * 0.68;
+                if (i === 0) ctx.moveTo(i, y);
+                else ctx.lineTo(i, y);
+            }
+            ctx.stroke();
+            waveOffset += 1.8;
+
+            // 沙灘
+            const sand = ctx.createLinearGradient(0, canvas.height * 0.7, 0, canvas.height);
+            sand.addColorStop(0, '#f3e5ab');
+            sand.addColorStop(1, '#e6be8a');
+            ctx.fillStyle = sand;
+            ctx.fillRect(0, canvas.height * 0.7, canvas.width, canvas.height * 0.3);
+        }
+
+        function drawVBBeer(x, y, w, h) {
+            ctx.save();
+            ctx.translate(x + w/2, y + h/2);
+            
+            // 罐身
+            ctx.fillStyle = '#005a3c';
+            ctx.beginPath();
+            ctx.roundRect(-w/2, -h/2, w, h, 8);
+            ctx.fill();
+
+            // 頂部
+            ctx.fillStyle = '#bdc3c7';
+            ctx.beginPath();
+            ctx.ellipse(0, -h/2, w/2, 5, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Logo
+            ctx.beginPath();
+            ctx.fillStyle = 'white';
+            ctx.arc(0, 0, w/2.8, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.lineWidth = 4;
+            ctx.strokeStyle = '#e74c3c';
+            ctx.stroke();
+
+            ctx.fillStyle = 'black';
+            ctx.font = 'bold 16px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('VB', 0, 0);
+
+            ctx.restore();
+        }
+
+        function drawTarget() {
+            target.x += target.vx;
+            target.y += target.vy;
+
+            // 隨機彈跳邊界
+            if (target.x <= 0 || target.x + target.width >= canvas.width) target.vx *= -1;
+            if (target.y <= 0 || target.y + target.height >= canvas.height * 0.75) target.vy *= -1;
+
+            drawVBBeer(target.x, target.y, target.width, target.height);
+        }
+
+        function update() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawBondiBeach();
+
+            if (gameState === 'START') return;
+
+            drawTarget();
+
+            // 點擊波紋視覺效果
+            for (let i = ripples.length - 1; i >= 0; i--) {
+                const r = ripples[i];
+                ctx.beginPath();
+                ctx.strokeStyle = `rgba(255, 255, 255, ${r.a})`;
+                ctx.lineWidth = 2;
+                ctx.arc(r.x, r.y, r.r, 0, Math.PI * 2);
+                ctx.stroke();
+                r.r += 3;
+                r.a -= 0.05;
+                if (r.a <= 0) ripples.splice(i, 1);
+            }
+
+            // 水球處理
+            for (let i = balloons.length - 1; i >= 0; i--) {
+                const b = balloons[i];
+                b.x += b.vx;
+                b.y += b.vy;
+                b.vy += b.gravity;
+
+                ctx.beginPath();
+                ctx.fillStyle = b.color;
+                ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // 碰撞檢測
+                const hitX = b.x > target.x && b.x < target.x + target.width;
+                const hitY = b.y > target.y && b.y < target.y + target.height;
+
+                if (hitX && hitY) {
+                    score += 10;
+                    ammo += 1;
+                    target.vx *= 1.05;
+                    target.vy *= 1.05;
+                    createSplat(b.x, b.y, '#f1c40f'); 
+                    balloons.splice(i, 1);
+                    updateUI();
+                    continue;
+                }
+
+                if (b.y > canvas.height * 0.9) {
+                    createSplat(b.x, b.y, '#ffffff');
+                    balloons.splice(i, 1);
+                }
+            }
+
+            // 特效
+            for (let i = splats.length - 1; i >= 0; i--) {
+                const s = splats[i];
+                s.x += s.vx;
+                s.y += s.vy;
+                s.vy += 0.25;
+                s.life -= 0.03;
+                ctx.globalAlpha = Math.max(0, s.life);
+                ctx.fillStyle = s.color;
+                ctx.beginPath();
+                ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalAlpha = 1;
+                if (s.life <= 0) splats.splice(i, 1);
+            }
+
+            if (ammo <= 0 && balloons.length === 0 && gameState === 'PLAYING') {
+                gameState = 'GAMEOVER';
+                if (score > highScore) highScore = score;
+                setTimeout(showEndScreen, 600);
+            }
+        }
+
+        function showEndScreen() {
+            document.getElementById('start-modal').querySelector('h2').innerText = "Cheers Mate!";
+            document.getElementById('start-modal').querySelector('p:last-of-type').innerHTML = `你在邦迪海灘擊落了這麼多：<br><span class="text-4xl block my-3 text-green-700 font-black">${score}</span>最高紀錄：${highScore}`;
+            startBtn.innerText = "再來一罐！";
+            overlay.style.display = 'flex';
+            updateUI();
+        }
+
+        function animate() {
+            update();
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+    </script>
+</body>
+</html>
