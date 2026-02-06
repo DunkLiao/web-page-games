@@ -113,6 +113,24 @@
                     <span class="text-xs text-gray-400">快</span>
                 </div>
             </div>
+
+            <div class="mb-4 text-left bg-gray-50 p-3 rounded-lg">
+                <p class="text-gray-700 font-bold mb-2 text-center text-sm">水球下墜速度</p>
+                <div class="flex items-center gap-4">
+                    <span class="text-xs text-gray-400">慢</span>
+                    <input type="range" id="gravity-slider" min="0.25" max="1.2" step="0.05" value="0.55">
+                    <span class="text-xs text-gray-400">快</span>
+                </div>
+            </div>
+
+            <div class="mb-6 text-left bg-gray-50 p-3 rounded-lg">
+                <p class="text-gray-700 font-bold mb-2 text-center text-sm">水球左右風向飄移</p>
+                <div class="flex items-center gap-4">
+                    <span class="text-xs text-gray-400">穩</span>
+                    <input type="range" id="wind-slider" min="0" max="12" step="0.2" value="5">
+                    <span class="text-xs text-gray-400">飄</span>
+                </div>
+            </div>
             
             <p class="mb-6 text-gray-500 text-sm leading-relaxed">
                 雪梨邦迪海灘到了！<br>
@@ -151,6 +169,8 @@
         const overlay = document.getElementById('overlay-screen');
         const startBtn = document.getElementById('start-btn');
         const speedSlider = document.getElementById('speed-slider');
+        const gravitySlider = document.getElementById('gravity-slider');
+        const windSlider = document.getElementById('wind-slider');
 
         let gameState = 'START';
         let score = 0;
@@ -160,6 +180,8 @@
         let splats = [];
         let ripples = [];
         let waveOffset = 0;
+        let fallGravity = 0.55;
+        let windDrift = 5;
         
         const target = {
             x: 0,
@@ -212,6 +234,8 @@
             splats = [];
             ripples = [];
             target.baseSpeed = parseInt(speedSlider.value);
+            fallGravity = parseFloat(gravitySlider.value);
+            windDrift = parseFloat(windSlider.value);
             target.x = canvas.width / 2 - target.width / 2;
             target.y = canvas.height * 0.2;
             
@@ -236,22 +260,16 @@
             ammo--;
             updateUI();
 
-            const startX = canvas.width / 2;
-            const startY = canvas.height - 50;
-            const dx = tx - startX;
-            const dy = ty - startY;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            
-            const power = 22; // 稍微增加力道
-            const vx = (dx / dist) * power;
-            const vy = (dy / dist) * power;
+            const startX = tx;
+            const startY = -20;
 
             balloons.push({
                 x: startX,
                 y: startY,
-                vx: vx,
-                vy: vy,
-                gravity: 0.3,
+                vx: (Math.random() - 0.5) * windDrift,
+                vy: 0,
+                gravity: fallGravity,
+                wind: (Math.random() - 0.5) * windDrift,
                 radius: 12,
                 color: '#ffeb3b'
             });
@@ -373,6 +391,7 @@
             // 水球處理
             for (let i = balloons.length - 1; i >= 0; i--) {
                 const b = balloons[i];
+                b.vx += b.wind * 0.04;
                 b.x += b.vx;
                 b.y += b.vy;
                 b.vy += b.gravity;
