@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>網頁遊戲集合</title>
+    <title>電子遊戲間</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
@@ -12,64 +12,103 @@
         }
 
         body {
-            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
+            background: radial-gradient(circle at top, rgba(255, 215, 0, 0.12) 0%, rgba(255, 215, 0, 0) 45%),
+                        radial-gradient(circle at 80% 20%, rgba(0, 255, 240, 0.15) 0%, rgba(0, 255, 240, 0) 40%),
+                        linear-gradient(160deg, #0a0b10 0%, #151328 55%, #0b0b12 100%);
             min-height: 100vh;
-            color: #ffffff;
+            color: #f8fafc;
+        }
+
+        .neon-grid {
+            position: fixed;
+            inset: 0;
+            background-image: linear-gradient(rgba(0, 255, 240, 0.08) 1px, transparent 1px),
+                              linear-gradient(90deg, rgba(0, 255, 240, 0.08) 1px, transparent 1px);
+            background-size: 60px 60px;
+            mask-image: radial-gradient(circle at 50% 20%, rgba(0, 0, 0, 0.9), transparent 65%);
+            opacity: 0.7;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .scanline {
+            position: fixed;
+            inset: 0;
+            background: repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0px, rgba(255, 255, 255, 0.03) 1px, transparent 1px, transparent 4px);
+            mix-blend-mode: soft-light;
+            opacity: 0.6;
+            pointer-events: none;
+            z-index: 1;
         }
 
         .card {
-            background: rgba(20, 28, 50, 0.85);
-            backdrop-filter: blur(10px);
-            border: 2px solid #00d4ff;
-            border-radius: 20px;
-            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            box-shadow: 0 0 20px rgba(0, 212, 255, 0.2);
+            background: linear-gradient(180deg, rgba(12, 13, 24, 0.95) 0%, rgba(16, 18, 34, 0.88) 100%);
+            border: 2px solid rgba(0, 255, 240, 0.5);
+            border-radius: 18px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+            box-shadow: 0 0 24px rgba(0, 255, 240, 0.15), inset 0 0 24px rgba(255, 215, 0, 0.08);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(120deg, transparent 0%, rgba(255, 215, 0, 0.12) 40%, transparent 70%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
         }
 
         .card:hover {
-            transform: translateY(-8px);
-            border-color: #ff006e;
-            box-shadow: 0 0 30px rgba(255, 0, 110, 0.5), 0 20px 40px rgba(0, 212, 255, 0.3);
+            transform: translateY(-6px) scale(1.01);
+            border-color: rgba(255, 215, 0, 0.9);
+            box-shadow: 0 0 32px rgba(255, 215, 0, 0.35), 0 18px 36px rgba(0, 255, 240, 0.25);
+        }
+
+        .card:hover::after {
+            opacity: 1;
         }
 
         .btn-play {
-            background: linear-gradient(135deg, #00d4ff 0%, #0099ff 100%);
-            transition: all 0.3s ease;
+            background: linear-gradient(135deg, #facc15 0%, #f97316 100%);
+            transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
             position: relative;
             overflow: hidden;
-            border: 2px solid #00d4ff;
-            color: #0a0e27;
-            text-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+            border: 2px solid rgba(255, 215, 0, 0.9);
+            color: #100b1f;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
         }
 
         .btn-play::before {
             content: '';
             position: absolute;
             top: 0;
-            left: -100%;
+            left: -120%;
             width: 100%;
             height: 100%;
-            background: rgba(255, 0, 110, 0.3);
-            transition: left 0.5s ease;
+            background: linear-gradient(120deg, transparent 0%, rgba(255, 255, 255, 0.6) 50%, transparent 100%);
+            transition: left 0.45s ease;
         }
 
         .btn-play:hover::before {
-            left: 100%;
+            left: 120%;
         }
 
         .btn-play:hover {
             transform: scale(1.05);
-            box-shadow: 0 0 20px rgba(0, 212, 255, 0.8), 0 0 40px rgba(255, 0, 110, 0.4);
-            border-color: #ff006e;
-            background: linear-gradient(135deg, #ff006e 0%, #ff4d6d 100%);
+            box-shadow: 0 0 24px rgba(250, 204, 21, 0.7), 0 0 40px rgba(0, 255, 240, 0.4);
+            border-color: rgba(0, 255, 240, 0.8);
+            background: linear-gradient(135deg, #22d3ee 0%, #38bdf8 100%);
         }
 
         .game-icon {
             font-size: 4rem;
             margin-bottom: 1rem;
             display: inline-block;
-            animation: float 3s ease-in-out infinite, glow 2s ease-in-out infinite;
-            filter: drop-shadow(0 0 10px rgba(0, 212, 255, 0.6));
+            animation: float 3.5s ease-in-out infinite, glow 2.5s ease-in-out infinite;
+            filter: drop-shadow(0 0 12px rgba(0, 255, 240, 0.7));
         }
 
         @keyframes float {
@@ -91,44 +130,65 @@
         }
 
         .header-title {
-            background: linear-gradient(135deg, #00d4ff 0%, #ff006e 100%);
+            background: linear-gradient(135deg, #facc15 0%, #22d3ee 50%, #f97316 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            text-shadow: 0 0 30px rgba(0, 212, 255, 0.5);
-            filter: drop-shadow(0 0 20px rgba(0, 212, 255, 0.3));
+            text-shadow: 0 0 32px rgba(250, 204, 21, 0.45);
+            letter-spacing: 0.08em;
+        }
+
+        .marquee {
+            border: 2px solid rgba(250, 204, 21, 0.6);
+            border-radius: 999px;
+            padding: 0.35rem 1.5rem;
+            color: #facc15;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            box-shadow: 0 0 18px rgba(250, 204, 21, 0.3);
+        }
+
+        .section-card {
+            background: linear-gradient(180deg, rgba(14, 18, 32, 0.92) 0%, rgba(12, 14, 26, 0.96) 100%);
+            border: 2px solid rgba(0, 255, 240, 0.4);
         }
 
         .footer {
-            color: rgba(0, 212, 255, 0.7);
+            color: rgba(250, 204, 21, 0.7);
             text-align: center;
             margin-top: 3rem;
             font-size: 0.875rem;
-            text-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+            text-shadow: 0 0 10px rgba(250, 204, 21, 0.35);
         }
     </style>
 </head>
 <body>
-    <div class="min-h-screen flex flex-col items-center justify-center p-4 py-12">
+    <div class="neon-grid"></div>
+    <div class="scanline"></div>
+    <div class="min-h-screen flex flex-col items-center justify-center p-4 py-12 relative z-10">
         <!-- 標題區域 -->
         <div class="text-center mb-12">
-            <div class="text-6xl mb-4">🎮</div>
-            <h1 class="header-title text-5xl font-black mb-2">網頁遊戲集合</h1>
-            <p class="text-lg" style="color: #00d4ff;">Web Page Games Collection</p>
+            <div class="text-6xl mb-4">🕹️</div>
+            <h1 class="header-title text-5xl md:text-6xl font-black mb-4">電子遊戲間</h1>
+            <div class="marquee text-xs md:text-sm inline-flex items-center gap-2">
+                <span>ARCADE SELECT</span>
+                <span>•</span>
+                <span>PLAYER 01</span>
+            </div>
         </div>
 
         <!-- 遊戲卡片容器 -->
-        <div class="w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+        <div class="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
 
             <!-- 遊戲卡片 1: 貓與鼠 -->
             <div class="card p-6 flex flex-col">
                 <div class="flex-1">
                     <div class="game-icon">🐱🐭</div>
-                    <h2 class="text-2xl font-black mb-2" style="color: #00d4ff;">貓與鼠</h2>
-                    <p class="text-sm mb-4 leading-relaxed" style="color: #b0d4ff;">
+                    <h2 class="text-2xl font-black mb-2" style="color: #facc15;">貓與鼠</h2>
+                    <p class="text-sm mb-4 leading-relaxed" style="color: #d1d5f9;">
                         在靜謐的草坪上展開追逐冒險。通過操控貓咪捕捉老鼠，收集分數！
                     </p>
-                    <div class="space-y-2 text-sm mb-6" style="color: #00d4ff;">
+                    <div class="space-y-2 text-sm mb-6" style="color: #22d3ee;">
                         <p>⏱️ <span class="font-semibold">遊戲時間</span>: 自訂 10-120 秒</p>
                         <p>🎯 <span class="font-semibold">目標</span>: 盡可能多地捕捉老鼠</p>
                         <p>📱 <span class="font-semibold">支援</span>: 電腦 / 手機</p>
@@ -143,17 +203,17 @@
             <div class="card p-6 flex flex-col">
                 <div class="flex-1">
                     <div class="game-icon">🍣🌸</div>
-                    <h2 class="text-2xl font-black mb-2" style="color: #db2777;">櫻花祭特急 - 迴轉壽司</h2>
-                    <p class="text-sm mb-4 leading-relaxed" style="color: #f9a8d4;">
+                    <h2 class="text-2xl font-black mb-2" style="color: #f97316;">櫻花祭特急 - 迴轉壽司</h2>
+                    <p class="text-sm mb-4 leading-relaxed" style="color: #fde68a;">
                         在櫻花盛開的春日，挑戰限時收集壽司並避開障礙，享受迴轉壽司的樂趣！
                     </p>
-                    <div class="space-y-2 text-sm mb-6" style="color: #db2777;">
+                    <div class="space-y-2 text-sm mb-6" style="color: #22d3ee;">
                         <p>⏱️ <span class="font-semibold">遊戲時間</span>: 30-120 秒</p>
                         <p>🎯 <span class="font-semibold">目標</span>: 收集指定數量壽司，避開障礙</p>
                         <p>📱 <span class="font-semibold">支援</span>: 手機 / 電腦</p>
                     </div>
                 </div>
-                <a href="SusiRow.html" class="btn-play text-white font-bold py-3 px-6 rounded-lg w-full text-center inline-block relative z-10" style="background: linear-gradient(135deg, #db2777 0%, #f9a8d4 100%); border-color: #db2777;">
+                <a href="SusiRow.html" class="btn-play text-white font-bold py-3 px-6 rounded-lg w-full text-center inline-block relative z-10" style="background: linear-gradient(135deg, #f97316 0%, #facc15 100%); border-color: #facc15;">
                     開始遊戲 →
                 </a>
             </div>
@@ -162,17 +222,17 @@
             <div class="card p-6 flex flex-col">
                 <div class="flex-1">
                     <div class="game-icon">🎴🀄</div>
-                    <h2 class="text-2xl font-black mb-2" style="color: #c6a052;">撿紅點 - 大正浪漫綺譚</h2>
-                    <p class="text-sm mb-4 leading-relaxed" style="color: #f4e9d5;">
+                    <h2 class="text-2xl font-black mb-2" style="color: #facc15;">撿紅點 - 大正浪漫綺譚</h2>
+                    <p class="text-sm mb-4 leading-relaxed" style="color: #fef3c7;">
                         復古大正風格的撿紅點紙牌遊戲。與AI對戰，透過配對獲取紅色花色的分數！
                     </p>
-                    <div class="space-y-2 text-sm mb-6" style="color: #c6a052;">
+                    <div class="space-y-2 text-sm mb-6" style="color: #22d3ee;">
                         <p>🎯 <span class="font-semibold">目標</span>: 配對牌組獲取紅色牌分數</p>
                         <p>🃏 <span class="font-semibold">規則</span>: 小牌和為10，大牌點數相同</p>
                         <p>🎭 <span class="font-semibold">局數</span>: 1局 / 3局 / 5局制</p>
                     </div>
                 </div>
-                <a href="PickRedPocker.html" class="btn-play text-white font-bold py-3 px-6 rounded-lg w-full text-center inline-block relative z-10" style="background: linear-gradient(135deg, #8e2a2a 0%, #c6a052 100%); border-color: #c6a052;">
+                <a href="PickRedPocker.html" class="btn-play text-white font-bold py-3 px-6 rounded-lg w-full text-center inline-block relative z-10" style="background: linear-gradient(135deg, #facc15 0%, #f97316 100%); border-color: #facc15;">
                     開始遊戲 →
                 </a>
             </div>
@@ -181,26 +241,26 @@
             <div class="card p-6 flex flex-col">
                 <div class="flex-1">
                     <div class="game-icon">🏖️💦</div>
-                    <h2 class="text-2xl font-black mb-2" style="color: #22c55e;">夏日邦迪海灘丟水球</h2>
-                    <p class="text-sm mb-4 leading-relaxed" style="color: #bbf7d0;">
+                    <h2 class="text-2xl font-black mb-2" style="color: #22d3ee;">夏日邦迪海灘丟水球</h2>
+                    <p class="text-sm mb-4 leading-relaxed" style="color: #dbeafe;">
                         在邦迪海灘丟水球擊落 VB 啤酒罐！可調整移動速度、水球下墜重力與左右風向飄移，考驗反應與命中率。
                     </p>
-                    <div class="space-y-2 text-sm mb-6" style="color: #22c55e;">
+                    <div class="space-y-2 text-sm mb-6" style="color: #22d3ee;">
                         <p>🎯 <span class="font-semibold">目標</span>: 命中 VB 罐並刷新最高分</p>
                         <p>🧮 <span class="font-semibold">機制</span>: 命中加分、補給彈藥、動態難度提升</p>
                         <p>📱 <span class="font-semibold">支援</span>: 電腦 / 手機</p>
                     </div>
                 </div>
-                <a href="bondi-vb-toss.html" class="btn-play text-white font-bold py-3 px-6 rounded-lg w-full text-center inline-block relative z-10" style="background: linear-gradient(135deg, #16a34a 0%, #86efac 100%); border-color: #16a34a;">
+                <a href="bondi-vb-toss.html" class="btn-play text-white font-bold py-3 px-6 rounded-lg w-full text-center inline-block relative z-10" style="background: linear-gradient(135deg, #22d3ee 0%, #38bdf8 100%); border-color: #22d3ee;">
                     開始遊戲 →
                 </a>
             </div>
 
             <!-- 遊戲卡片 5: 更多遊戲敬請期待 -->
-            <div class="card p-6 flex flex-col items-center justify-center min-h-80 border-2 border-dashed" style="background: rgba(20, 28, 50, 0.5); border-color: #ff006e; box-shadow: 0 0 20px rgba(255, 0, 110, 0.2);">
+            <div class="card p-6 flex flex-col items-center justify-center min-h-80 border-2 border-dashed" style="background: rgba(10, 10, 18, 0.6); border-color: rgba(250, 204, 21, 0.6); box-shadow: 0 0 22px rgba(250, 204, 21, 0.2);">
                 <div class="text-5xl mb-4">🎲</div>
-                <h2 class="text-2xl font-black mb-2" style="color: #ff006e;">敬請期待</h2>
-                <p class="text-sm text-center" style="color: #b0d4ff;">
+                <h2 class="text-2xl font-black mb-2" style="color: #facc15;">敬請期待</h2>
+                <p class="text-sm text-center" style="color: #cbd5f5;">
                     更多精彩遊戲即將上線<br>
                     敬請繼續關注！
                 </p>
@@ -209,25 +269,25 @@
         </div>
 
         <!-- 關於區域 -->
-        <div class="w-full max-w-4xl card p-8 mb-8" style="background: rgba(20, 28, 50, 0.8); border-color: #00d4ff; box-shadow: 0 0 30px rgba(0, 212, 255, 0.3);">
-            <h2 class="text-2xl font-bold mb-4" style="color: #00d4ff;">📖 關於本專案</h2>
+        <div class="w-full max-w-5xl card section-card p-8 mb-8">
+            <h2 class="text-2xl font-bold mb-4" style="color: #facc15;">📖 關於本專案</h2>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
                 <div>
-                    <p class="font-semibold mb-2" style="color: #ff006e;">🛠️ 技術棧</p>
-                    <p style="color: #b0d4ff;">
+                    <p class="font-semibold mb-2" style="color: #22d3ee;">🛠️ 技術棧</p>
+                    <p style="color: #d1d5f9;">
                         HTML5 Canvas, Tailwind CSS, 
                         JavaScript 與 Gemini AI
                     </p>
                 </div>
                 <div>
-                    <p class="font-semibold mb-2" style="color: #ff006e;">📱 適配</p>
-                    <p style="color: #b0d4ff;">
+                    <p class="font-semibold mb-2" style="color: #22d3ee;">📱 適配</p>
+                    <p style="color: #d1d5f9;">
                         完全響應式設計，支援所有現代瀏覽器和行動裝置
                     </p>
                 </div>
                 <div>
-                    <p class="font-semibold mb-2" style="color: #ff006e;">🎨 設計</p>
-                    <p style="color: #b0d4ff;">
+                    <p class="font-semibold mb-2" style="color: #22d3ee;">🎨 設計</p>
+                    <p style="color: #d1d5f9;">
                         現代化UI，流暢動畫，沉浸式遊戲體驗
                     </p>
                 </div>
@@ -236,8 +296,8 @@
 
         <!-- 頁腳 -->
         <div class="footer">
-            <p>VibeCoding Games © 2026 | All rights reserved</p>
-            <p class="mt-2">Developed with 💜 using Gemini AI</p>
+            <p>VibeCoding Arcade © 2026 | All rights reserved</p>
+            <p class="mt-2">Powered by Gemini AI</p>
         </div>
     </div>
 </body>

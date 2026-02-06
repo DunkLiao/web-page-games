@@ -38,7 +38,6 @@
 
 - **前端框架**: HTML5, CSS3, JavaScript
 - **UI框架**: Tailwind CSS
-- **字體**: Noto Sans TC (支援繁體中文)
 - **開發工具**: Gemini AI
 
 ## 📁 項目結構
@@ -77,8 +76,8 @@ MIT License
 
 ## 👨‍💻 開發者
 
-VibeCoding Team
+DunkLiao
 
 ---
 
-**最後更新**: 2026年2月5日
+**最後更新**: 2026年2月7日
