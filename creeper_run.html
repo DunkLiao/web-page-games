@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>MINECRAFT 苦力怕紅綠燈：爆炸版</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Noto+Sans+TC:wght@700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --mc-dirt: #866043;
+            --mc-grass: #5aa351;
+            --mc-stone: #7a7a7a;
+            --mc-border: #373737;
+            --creeper-green: #50af49;
+            --creeper-dark: #3a8035;
+        }
+
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #1a1a1a;
+            background-image: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('https://www.transparenttextures.com/patterns/dark-matter.png');
+            touch-action: manipulation;
+            overflow: hidden;
+            color: #ffffff;
+        }
+
+        .mc-font {
+            font-family: 'Press Start 2P', cursive;
+            line-height: 1.5;
+        }
+
+        .pixel-border {
+            border: 4px solid var(--mc-border);
+            box-shadow: 
+                inset -4px -4px 0px 0px rgba(0,0,0,0.2),
+                inset 4px 4px 0px 0px rgba(255,255,255,0.1);
+            background-color: var(--mc-stone);
+        }
+
+        .pixel-btn {
+            position: relative;
+            border: 4px solid #000;
+            background: #aaaaaa;
+            box-shadow: inset -4px -4px #555, inset 4px 4px #fff;
+            image-rendering: pixelated;
+            transition: all 0.1s;
+        }
+
+        .pixel-btn:active {
+            box-shadow: inset 4px 4px #555, inset -4px -4px #fff;
+            transform: translateY(2px);
+        }
+
+        .pixel-btn-blue { background: #3c44aa; box-shadow: inset -4px -4px #1d2151, inset 4px 4px #767edb; color: white; }
+        .pixel-btn-yellow { background: #de9e1e; box-shadow: inset -4px -4px #7a550d, inset 4px 4px #f5cc61; color: white; }
+
+        .track {
+            height: 160px;
+            background: var(--mc-dirt);
+            border-top: 10px solid var(--mc-grass);
+            position: relative;
+            image-rendering: pixelated;
+            box-shadow: 0 10px 0 #000;
+            margin-top: 20px;
+        }
+
+        .finish-line {
+            position: absolute;
+            right: 40px;
+            top: -10px;
+            bottom: 0;
+            width: 20px;
+            background: repeating-linear-gradient(
+                0deg,
+                #fff 0, #fff 20px,
+                #000 20px, #000 40px
+            );
+            border-left: 4px solid #000;
+        }
+
+        .player {
+            width: 50px;
+            height: 80px;
+            transition: left 0.1s linear, opacity 0.2s;
+            transform: translateY(-50%);
+            z-index: 10;
+        }
+
+        .redstone-lamp {
+            width: 100px;
+            height: 100px;
+            background: #2a1111;
+            border: 6px solid #111;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .redstone-lamp.lit-green {
+            background: #4de64d;
+            box-shadow: 0 0 40px #4de64d, inset 0 0 20px #fff;
+        }
+
+        .redstone-lamp.lit-red {
+            background: #ff0000;
+            box-shadow: 0 0 40px #ff0000, inset 0 0 20px #fff;
+        }
+
+        /* 爆炸前的震動與變白效果 */
+        .swelling {
+            animation: swell 0.3s infinite;
+            filter: brightness(2) contrast(0.5);
+        }
+
+        @keyframes swell {
+            0%, 100% { transform: translateY(-50%) scale(1); }
+            50% { transform: translateY(-50%) scale(1.1); }
+        }
+
+        .jump {
+            animation: jump 0.6s ease-in-out infinite;
+        }
+
+        @keyframes jump {
+            0%, 100% { transform: translateY(-50%); }
+            50% { transform: translateY(-100%); }
+        }
+
+        /* 粒子通用樣式 */
+        .particle {
+            position: absolute;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        .cloud {
+            position: absolute;
+            background: white;
+            width: 60px;
+            height: 20px;
+            box-shadow: 10px 10px 0 white, -10px 10px 0 white, 0 20px 0 white;
+            opacity: 0.3;
+            z-index: -1;
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen p-4 overflow-hidden">
+
+    <div class="cloud top-20 left-[10%]"></div>
+    <div class="cloud top-40 left-[70%]"></div>
+
+    <div class="text-center mb-6">
+        <h1 class="mc-font text-2xl md:text-3xl mb-2 text-green-500 drop-shadow-[4px_4px_0_rgba(0,0,0,1)]">
+            CREEPER BOOM<br>苦力怕大挑戰
+        </h1>
+        <p class="text-sm tracking-widest text-slate-300">過關即灑花，紅燈即爆炸！</p>
+    </div>
+
+    <div class="w-full max-w-2xl pixel-border p-6 md:p-10 relative">
+        
+        <button id="reset-icon-btn" class="absolute top-2 right-2 flex items-center gap-2 px-3 py-1 bg-zinc-700 hover:bg-zinc-600 border-2 border-black text-[10px] mc-font transition-all active:translate-y-1">
+            <span>RESET</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+        </button>
+
+        <div class="flex justify-center mb-10">
+            <div class="redstone-lamp-outer border-4 border-black p-1 bg-zinc-900">
+                <div id="lamp" class="redstone-lamp">
+                    <div class="w-4 h-4 bg-white/20"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="game-track" class="track w-full mb-10">
+            <div class="finish-line"></div>
+            <div id="player" class="player absolute left-0 top-1/2 select-none" style="left: 20px;">
+                <svg viewBox="0 0 50 80" width="100%" height="100%" image-rendering="pixelated">
+                    <rect x="15" y="30" width="20" height="30" fill="#50af49" />
+                    <rect id="creeper-head" x="10" y="5" width="30" height="30" fill="#50af49" stroke="#3a8035" stroke-width="1" />
+                    <rect x="16" y="12" width="6" height="6" fill="#000" />
+                    <rect x="28" y="12" width="6" height="6" fill="#000" />
+                    <rect x="22" y="18" width="6" height="10" fill="#000" />
+                    <rect x="19" y="22" width="3" height="10" fill="#000" />
+                    <rect x="28" y="22" width="3" height="10" fill="#000" />
+                    <rect x="10" y="60" width="12" height="15" fill="#3a8035" />
+                    <rect x="28" y="60" width="12" height="15" fill="#3a8035" />
+                </svg>
+            </div>
+        </div>
+
+        <div id="status-msg" class="mc-font text-[12px] text-center h-12 mb-6 flex items-center justify-center text-white">
+            READY?
+        </div>
+
+        <div class="flex flex-col items-center gap-6">
+            <button id="move-btn" class="pixel-btn pixel-btn-blue mc-font px-10 py-5 text-lg w-full max-w-xs select-none">
+                HOLD TO RUN
+            </button>
+            
+            <button id="restart-btn" class="hidden pixel-btn pixel-btn-yellow mc-font px-10 py-5 text-lg w-full max-w-xs">
+                TRY AGAIN?
+            </button>
+        </div>
+    </div>
+
+    <div class="mt-8 mc-font text-[8px] text-slate-500 text-center leading-loose">
+        [SPACE] / [D] / [ARROW RIGHT] TO MOVE
+    </div>
+
+    <script>
+        let isRedLight = false;
+        let isMoving = false;
+        let playerPos = 20;
+        let gameActive = true;
+        let moveInterval = null;
+        let lightTimeout = null;
+        const activeKeys = new Set();
+
+        const player = document.getElementById('player');
+        const lamp = document.getElementById('lamp');
+        const moveBtn = document.getElementById('move-btn');
+        const restartBtn = document.getElementById('restart-btn');
+        const resetIconBtn = document.getElementById('reset-icon-btn');
+        const statusMsg = document.getElementById('status-msg');
+        const track = document.getElementById('game-track');
+
+        function initGame() {
+            stopMoving();
+            clearTimeout(lightTimeout);
+            
+            playerPos = 20;
+            player.style.left = playerPos + 'px';
+            player.style.opacity = '1';
+            player.className = 'player absolute left-0 top-1/2 select-none';
+            
+            const head = document.getElementById('creeper-head');
+            head.setAttribute('fill', '#50af49');
+            
+            isRedLight = false;
+            gameActive = true;
+            isMoving = false;
+            activeKeys.clear();
+            
+            statusMsg.innerText = 'ARE YOU READY?';
+            statusMsg.style.color = '#ffffff';
+            
+            moveBtn.classList.remove('hidden');
+            restartBtn.classList.add('hidden');
+            
+            setLight('green');
+            scheduleLightChange();
+        }
+
+        function setLight(color) {
+            if (color === 'green') {
+                isRedLight = false;
+                lamp.className = 'redstone-lamp lit-green';
+                statusMsg.innerText = 'SSSss... GO!';
+                statusMsg.style.color = '#4de64d';
+            } else {
+                isRedLight = true;
+                lamp.className = 'redstone-lamp lit-red';
+                statusMsg.innerText = 'STOP!!!';
+                statusMsg.style.color = '#ff0000';
+                if (isMoving) gameOver(false);
+            }
+        }
+
+        function scheduleLightChange() {
+            if (!gameActive) return;
+            const nextChange = isRedLight ? Math.random() * 1500 + 800 : Math.random() * 2500 + 1200;
+            lightTimeout = setTimeout(() => {
+                if (!gameActive) return;
+                setLight(isRedLight ? 'green' : 'red');
+                scheduleLightChange();
+            }, nextChange);
+        }
+
+        function startMoving() {
+            if (!gameActive || isMoving) return;
+            isMoving = true;
+            if (isRedLight) { gameOver(false); return; }
+
+            if (!moveInterval) {
+                moveInterval = setInterval(() => {
+                    const finishLinePos = track.clientWidth - 80;
+                    if (isMoving && gameActive) {
+                        playerPos += 6; 
+                        player.style.left = playerPos + 'px';
+                        if (playerPos >= finishLinePos) gameOver(true);
+                        if (isRedLight) gameOver(false);
+                    }
+                }, 30);
+            }
+        }
+
+        function stopMoving() {
+            isMoving = false;
+            if (moveInterval) { clearInterval(moveInterval); moveInterval = null; }
+        }
+
+        function gameOver(win) {
+            if (!gameActive) return;
+            gameActive = false;
+            stopMoving();
+            clearTimeout(lightTimeout);
+
+            moveBtn.classList.add('hidden');
+            
+            if (win) {
+                statusMsg.innerText = 'VICTORY! SSSssSS!';
+                statusMsg.style.color = '#facc15';
+                player.classList.add('jump');
+                createParticles(playerPos + 25, 'flower');
+                setTimeout(() => restartBtn.classList.remove('hidden'), 1000);
+            } else {
+                statusMsg.innerText = 'BOOM! YOU FAILED!';
+                statusMsg.style.color = '#ff0000';
+                player.classList.add('swelling');
+                
+                // 延遲爆炸效果
+                setTimeout(() => {
+                    createParticles(playerPos + 25, 'explosion');
+                    player.style.opacity = '0';
+                    setTimeout(() => restartBtn.classList.remove('hidden'), 800);
+                }, 300);
+            }
+        }
+
+        // 粒子效果：灑花與爆炸
+        function createParticles(x, type) {
+            const container = document.body;
+            const count = type === 'flower' ? 40 : 60;
+            const colors = type === 'flower' ? 
+                ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff'] : 
+                ['#ffffff', '#7a7a7a', '#373737', '#000000', '#ff5555'];
+
+            for (let i = 0; i < count; i++) {
+                const p = document.createElement('div');
+                p.className = 'particle';
+                const size = Math.random() * 8 + 4;
+                p.style.width = size + 'px';
+                p.style.height = size + 'px';
+                p.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                
+                // 初始位置
+                const rect = track.getBoundingClientRect();
+                p.style.left = (rect.left + x) + 'px';
+                p.style.top = (rect.top + 80) + 'px';
+                
+                container.appendChild(p);
+
+                // 動態軌跡
+                const angle = Math.random() * Math.PI * 2;
+                const velocity = type === 'flower' ? Math.random() * 10 + 5 : Math.random() * 15 + 10;
+                let vx = Math.cos(angle) * velocity;
+                let vy = Math.sin(angle) * velocity - (type === 'flower' ? 10 : 0);
+                let posX = rect.left + x;
+                let posY = rect.top + 80;
+
+                const animate = () => {
+                    vx *= 0.98;
+                    vy += 0.5; // 重力
+                    posX += vx;
+                    posY += vy;
+                    p.style.left = posX + 'px';
+                    p.style.top = posY + 'px';
+                    p.style.opacity = parseFloat(p.style.opacity || 1) - 0.02;
+
+                    if (parseFloat(p.style.opacity) > 0) {
+                        requestAnimationFrame(animate);
+                    } else {
+                        p.remove();
+                    }
+                };
+                requestAnimationFrame(animate);
+            }
+        }
+
+        moveBtn.addEventListener('mousedown', (e) => e.button === 0 && startMoving());
+        moveBtn.addEventListener('touchstart', (e) => { e.preventDefault(); startMoving(); });
+        window.addEventListener('mouseup', stopMoving);
+        window.addEventListener('touchend', stopMoving);
+
+        window.addEventListener('keydown', (e) => {
+            const movementKeys = ['Space', 'ArrowRight', 'KeyD'];
+            if (movementKeys.includes(e.code)) {
+                e.preventDefault();
+                if (!activeKeys.has(e.code)) { activeKeys.add(e.code); startMoving(); }
+            }
+        });
+        window.addEventListener('keyup', (e) => {
+            if (['Space', 'ArrowRight', 'KeyD'].includes(e.code)) {
+                activeKeys.delete(e.code);
+                if (activeKeys.size === 0) stopMoving();
+            }
+        });
+
+        restartBtn.addEventListener('click', initGame);
+        resetIconBtn.addEventListener('click', initGame);
+
+        initGame();
+    </script>
+</body>
+</html>

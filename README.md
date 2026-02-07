@@ -34,11 +34,18 @@
     - **技術**: HTML5 Canvas, Tailwind CSS, JavaScript
     - **語言**: 繁體中文
 
+### 5. MINECRAFT 苦力怕紅綠燈：爆炸版 (Creeper Boom)
+
+    - **文件**: `creeper_run.html`
+    - **描述**: 像素風紅綠燈小遊戲，綠燈長按/按住前進，紅燈移動就會爆炸。抵達終點即獲勝並有灑花特效。
+    - **技術**: HTML5, Tailwind CSS, JavaScript
+    - **語言**: 繁體中文
+
 ## 🛠️ 技術棧
 
 - **前端框架**: HTML5, CSS3, JavaScript
 - **UI框架**: Tailwind CSS
-- **開發工具**: Gemini AI
+- **開發工具**: Gemini AI, Visual Studio Code, GitHub Copilot
 
 ## 📁 項目結構
 
@@ -48,6 +55,7 @@ web-page-games/
 ├── SusiRow.html              # 櫻花祭特急 - 迴轉壽司
 ├── PickRedPocker.html        # 撿紅點 - 大正浪漫綺譚
 ├── bondi-vb-toss.html         # 夏日邦迪海灘丟水球 - VB 版
+├── creeper_run.html           # MINECRAFT 苦力怕紅綠燈：爆炸版
 ├── index.html                # 遊戲集合首頁
 └── README.md                 # 說明文件
 ```
