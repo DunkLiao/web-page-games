@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minecraft 貓咪牧場 - 終界龍慢速降臨</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --mc-grass: #5aa35a;
+            --mc-dirt: #866043;
+            --mc-sky: #78a7ff;
+            --mc-btn: #aaaaaa;
+            --mc-shadow: #373737;
+            --mc-iron: #d2d2d2;
+            --ender-purple: #d63384;
+        }
+
+        body {
+            background-color: var(--mc-sky);
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Segoe UI', '微軟正黑體', sans-serif;
+            image-rendering: pixelated;
+            user-select: none;
+            transition: filter 2s ease;
+        }
+
+        /* 像素太陽與雲 */
+        .sun {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            background: #ffff55;
+            top: 60px;
+            right: 80px;
+            box-shadow: 0 0 0 10px rgba(255, 255, 85, 0.3);
+            z-index: 1;
+        }
+
+        .pixel-cloud {
+            position: absolute;
+            background: white;
+            box-shadow: 20px 0 white, -20px 0 white, 0 20px white, 0 -20px white;
+            z-index: 2;
+            animation: moveCloud linear infinite;
+        }
+
+        @keyframes moveCloud {
+            from { left: -200px; }
+            to { left: 110%; }
+        }
+
+        /* 方塊環境 */
+        .mc-mountains {
+            position: absolute;
+            bottom: 30vh;
+            width: 100%;
+            height: 40vh;
+            display: flex;
+            align-items: flex-end;
+            z-index: 3;
+        }
+
+        .mc-mountain {
+            background-color: #7d7d7d;
+            border-top: 15px solid #afafaf;
+            width: 250px;
+            margin-right: -40px;
+            position: relative;
+        }
+
+        .mc-ground {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 35vh;
+            background-color: var(--mc-grass);
+            border-top: 20px solid #71b371;
+            z-index: 10;
+        }
+
+        /* Minecraft 貓咪建模 */
+        .pixel-cat {
+            position: absolute;
+            z-index: 25;
+            transition: all 1s ease;
+            transform-origin: bottom center;
+        }
+
+        .cat-container {
+            position: relative;
+            width: 60px;
+            height: 40px;
+            animation: idleBreathe 3s infinite ease-in-out;
+        }
+
+        .c-body { position: absolute; width: 36px; height: 18px; bottom: 8px; left: 12px; }
+        .c-head { position: absolute; width: 16px; height: 16px; top: 4px; left: 0px; }
+        .c-ear { position: absolute; width: 4px; height: 4px; top: -4px; }
+        .c-ear.l { left: 2px; }
+        .c-ear.r { right: 2px; }
+        .c-tail { position: absolute; width: 16px; height: 4px; right: -14px; top: 4px; transform-origin: left center; animation: tailWag 2s infinite ease-in-out; }
+        .c-leg { position: absolute; width: 4px; height: 8px; bottom: -8px; }
+        .c-eye { position: absolute; width: 4px; height: 4px; background: #000; top: 4px; left: 2px; }
+
+        @keyframes tailWag {
+            0%, 100% { transform: rotate(10deg); }
+            50% { transform: rotate(-20deg); }
+        }
+
+        @keyframes idleBreathe {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
+
+        /* 貓咪配色方案 */
+        .skin-orange .c-main { background: #f39c12; }
+        .skin-orange .c-dark { background: #d35400; }
+        .skin-tuxedo .c-main { background: #2d3436; }
+        .skin-tuxedo .c-dark { background: #000000; }
+        .skin-tuxedo .c-white { background: #ffffff; }
+        .skin-siamese .c-main { background: #f5f6fa; }
+        .skin-siamese .c-dark { background: #4b4b4b; }
+        .skin-siamese .c-eye { background: #00a8ff; }
+        .skin-tabby .c-main { background: #95a5a6; }
+        .skin-tabby .c-dark { background: #7f8c8d; }
+
+        /* 鐵巨人步行動畫 */
+        @keyframes golemWalk {
+            0%, 100% { transform: translateY(0) rotate(2deg); }
+            50% { transform: translateY(-10px) rotate(-2deg); }
+        }
+        
+        @keyframes armSwing {
+            0%, 100% { transform: rotate(-5deg); }
+            50% { transform: rotate(15deg); }
+        }
+
+        .golem-walking {
+            animation: golemWalk 0.8s infinite linear;
+        }
+        
+        .golem-arm {
+            transform-origin: top center;
+            animation: armSwing 0.8s infinite ease-in-out;
+        }
+
+        /* 終界龍動畫 */
+        @keyframes dragonFlap {
+            0%, 100% { transform: rotate(5deg) translateY(0); }
+            50% { transform: rotate(-5deg) translateY(-15px); }
+        }
+
+        .dragon-wing {
+            transform-origin: right center;
+            animation: wingAnimation 1.2s infinite alternate ease-in-out;
+        }
+
+        @keyframes wingAnimation {
+            from { transform: scaleY(1); }
+            to { transform: scaleY(0.15); }
+        }
+
+        /* UI */
+        .mc-panel {
+            background-color: #c6c6c6;
+            border: 4px solid #000;
+            box-shadow: inset -4px -4px #555, inset 4px 4px #fff;
+        }
+
+        .mc-btn {
+            background-color: var(--mc-btn);
+            border: 4px solid #000;
+            border-top-color: #fff;
+            border-left-color: #fff;
+            box-shadow: inset -4px -4px var(--mc-shadow);
+            color: #3f3f3f;
+            font-weight: bold;
+            transition: all 0.1s;
+        }
+
+        .mc-btn:active:not(:disabled) {
+            border-top-color: var(--mc-shadow);
+            border-left-color: var(--mc-shadow);
+            box-shadow: inset 4px 4px #000;
+            transform: translateY(2px);
+        }
+
+        .overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.85);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            color: white;
+            text-align: center;
+            backdrop-filter: blur(4px);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="sun" id="sun"></div>
+    <div id="clouds"></div>
+
+    <div class="mc-mountains">
+        <div class="mc-mountain" style="height: 220px; left: 5%;"></div>
+        <div class="mc-mountain" style="height: 320px; left: 18%; z-index: 4;"></div>
+        <div class="mc-mountain" style="height: 180px; left: 45%;"></div>
+        <div class="mc-mountain" style="height: 380px; left: 65%; z-index: 4;"></div>
+    </div>
+
+    <div class="mc-ground"></div>
+
+    <div class="relative pt-10 z-[100] flex flex-col items-center">
+        <div class="bg-black/40 text-[#ffff55] px-4 py-1 border-2 border-white mb-4 font-mono">TIME: <span id="timer">00:00</span></div>
+        
+        <div class="mc-panel p-6 w-80 text-center">
+            <h1 class="text-xl font-bold mb-4 tracking-tighter text-slate-700">方塊貓咪牧場</h1>
+            <div class="grid grid-cols-2 gap-2 mb-6">
+                <div class="bg-[#333] p-2 border-2 border-black text-white">
+                    <p class="text-[10px] text-gray-400">CATS</p>
+                    <p id="catCount" class="text-2xl font-bold">0</p>
+                </div>
+                <div class="bg-[#333] p-2 border-2 border-black text-white">
+                    <p class="text-[10px] text-gray-400">GOLEMS</p>
+                    <p id="golemCount" class="text-2xl font-bold">0</p>
+                </div>
+            </div>
+            <button id="addBtn" onclick="addCat()" class="mc-btn w-full py-4 text-lg">
+                生成貓咪 🐱
+            </button>
+        </div>
+    </div>
+
+    <div id="catLayer" class="absolute inset-0 pointer-events-none"></div>
+
+    <!-- 鐵巨人 (Iron Golem) -->
+    <div id="ironGolem" class="absolute bottom-[35vh] -left-60 z-[50] transition-all duration-[6s] ease-in-out">
+        <div id="golemSprite">
+            <svg width="120" height="150" viewBox="0 0 100 120">
+                <rect x="35" y="90" width="12" height="30" fill="#a5a5a5" />
+                <rect x="53" y="90" width="12" height="30" fill="#a5a5a5" />
+                <rect x="25" y="40" width="50" height="55" fill="#d2d2d2" />
+                <rect x="25" y="50" width="10" height="4" fill="#5aa35a" />
+                <rect x="65" y="70" width="10" height="4" fill="#5aa35a" />
+                <rect x="38" y="15" width="24" height="25" fill="#d2d2d2" />
+                <rect x="46" y="28" width="8" height="15" fill="#b19688" />
+                <rect x="42" y="22" width="4" height="4" fill="#000" />
+                <rect x="54" y="22" width="4" height="4" fill="#000" />
+                <g class="golem-arm">
+                    <rect x="10" y="40" width="15" height="60" fill="#c0c0c0" />
+                </g>
+                <g class="golem-arm" style="animation-delay: -0.4s">
+                    <rect x="75" y="40" width="15" height="60" fill="#c0c0c0" />
+                </g>
+            </svg>
+        </div>
+    </div>
+
+    <!-- 終界龍 (Ender Dragon) - 緩慢降臨設定 -->
+    <div id="enderDragon" class="absolute -top-[600px] left-1/2 -translate-x-1/2 z-[60] transition-all duration-[8s] ease-in-out pointer-events-none">
+        <div class="relative" style="animation: dragonFlap 4s infinite ease-in-out;">
+            <div id="dragonBubble" class="absolute top-[80px] -right-20 bg-white border-2 border-black px-4 py-2 text-sm hidden shadow-[4px_4px_0px_#d63384]">請安心入眠...</div>
+            <svg width="320" height="220" viewBox="0 0 150 100">
+                <!-- 龍尾巴 -->
+                <rect x="110" y="40" width="30" height="8" fill="#111" />
+                <rect x="135" y="35" width="10" height="6" fill="#111" />
+                <!-- 龍身體 -->
+                <rect x="40" y="30" width="70" height="28" fill="#222" />
+                <!-- 龍脖子與頭 -->
+                <rect x="15" y="20" width="25" height="12" fill="#111" />
+                <rect x="0" y="15" width="22" height="22" fill="#111" />
+                <!-- 龍眼睛 (紫色) -->
+                <rect x="4" y="22" width="4" height="4" fill="#d63384" />
+                <!-- 龍翅膀 (左) -->
+                <g class="dragon-wing" style="transform-origin: 40px 40px;">
+                    <rect x="0" y="0" width="55" height="35" fill="#111" opacity="0.95" />
+                </g>
+                <!-- 龍翅膀 (右) -->
+                <g class="dragon-wing" style="transform-origin: 110px 40px; transform: scaleX(-1);">
+                    <rect x="0" y="0" width="55" height="35" fill="#111" opacity="0.95" />
+                </g>
+            </svg>
+        </div>
+    </div>
+
+    <div id="idleOverlay" class="overlay">
+        <h2 class="text-4xl font-bold text-[#ffff55] mb-4">祝你好夢，明天見!</h2>
+        <div class="bg-white/10 p-8 border-4 border-white/20 mb-8">
+            <p class="text-gray-400 mb-2">總遊玩時數</p>
+            <p id="totalTime" class="text-5xl font-mono font-bold">00:00</p>
+        </div>
+        <button onclick="location.reload()" class="mc-btn px-12 py-3 text-lg">回到開頭</button>
+    </div>
+
+    <script>
+        let catCount = 0;
+        let golemCount = 0;
+        let seconds = 0;
+        let lastInteraction = Date.now();
+        let isBusy = false;
+        let isGameOver = false;
+
+        const IDLE_LIMIT = 300;
+
+        function initBackground() {
+            const container = document.getElementById('clouds');
+            for(let i=0; i<6; i++) {
+                const cloud = document.createElement('div');
+                cloud.className = 'pixel-cloud';
+                cloud.style.width = (60 + Math.random()*40) + 'px';
+                cloud.style.height = '20px';
+                cloud.style.top = (10 + Math.random()*20) + '%';
+                cloud.style.animationDuration = (30 + Math.random()*30) + 's';
+                cloud.style.animationDelay = -(Math.random()*50) + 's';
+                container.appendChild(cloud);
+            }
+        }
+
+        setInterval(() => {
+            if(isGameOver) return;
+            seconds++;
+            const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+            const s = (seconds % 60).toString().padStart(2, '0');
+            const str = `${m}:${s}`;
+            document.getElementById('timer').innerText = str;
+            document.getElementById('totalTime').innerText = str;
+            if((Date.now() - lastInteraction)/1000 > IDLE_LIMIT) endGame();
+        }, 1000);
+
+        function addCat() {
+            if(isBusy || isGameOver) return;
+            lastInteraction = Date.now();
+            catCount++;
+            document.getElementById('catCount').innerText = catCount;
+            spawnCat();
+            updateEnvironment();
+            if(catCount > 10) triggerGolem();
+        }
+
+        function spawnCat() {
+            const cat = document.createElement('div');
+            cat.className = 'pixel-cat';
+            const skins = ['skin-orange', 'skin-tuxedo', 'skin-siamese', 'skin-tabby'];
+            const skin = skins[Math.floor(Math.random() * skins.length)];
+            cat.classList.add(skin);
+            cat.style.left = (15 + Math.random() * 70) + '%';
+            cat.style.top = (70 + Math.random() * 15) + '%';
+            cat.innerHTML = `
+                <div class="cat-container">
+                    <div class="c-tail c-dark"></div>
+                    <div class="c-body c-main">
+                        <div class="c-leg c-dark" style="left:4px"></div>
+                        <div class="c-leg c-dark" style="left:12px"></div>
+                        <div class="c-leg c-dark" style="left:20px"></div>
+                        <div class="c-leg c-dark" style="left:28px"></div>
+                    </div>
+                    <div class="c-head c-main">
+                        <div class="c-ear l c-dark"></div>
+                        <div class="c-ear r c-dark"></div>
+                        <div class="c-eye"></div>
+                    </div>
+                </div>
+            `;
+            document.getElementById('catLayer').appendChild(cat);
+        }
+
+        function triggerGolem() {
+            isBusy = true;
+            document.getElementById('addBtn').disabled = true;
+            golemCount++;
+            document.getElementById('golemCount').innerText = golemCount;
+            const golem = document.getElementById('ironGolem');
+            const golemSprite = document.getElementById('golemSprite');
+            golemSprite.classList.add('golem-walking');
+            golem.style.left = "110%";
+            setTimeout(() => {
+                const sprites = document.querySelectorAll('.pixel-cat');
+                sprites.forEach((s, i) => {
+                    setTimeout(() => {
+                        s.style.transform = 'translateY(-150px) rotate(90deg) scale(0)';
+                        s.style.opacity = '0';
+                        setTimeout(() => s.remove(), 1000);
+                    }, i * 150);
+                });
+            }, 1500);
+            setTimeout(() => {
+                if(golemCount >= 3) {
+                    triggerDragon();
+                } else {
+                    resetActor(golem, "-260px");
+                }
+            }, 6500);
+        }
+
+        function triggerDragon() {
+            const dragon = document.getElementById('enderDragon');
+            const golem = document.getElementById('ironGolem');
+            const bubble = document.getElementById('dragonBubble');
+            const golemSprite = document.getElementById('golemSprite');
+            
+            // 終界龍慢速落下 (8秒)
+            dragon.style.top = "12%";
+            
+            // 鐵巨人停在中間位置
+            golemSprite.classList.remove('golem-walking');
+            golem.style.transition = "all 2.5s ease-out";
+            golem.style.left = "35%";
+
+            // 等龍落下到一半以上時顯示訊息 (約4秒後)
+            setTimeout(() => bubble.style.display = "block", 4500);
+
+            setTimeout(() => {
+                bubble.style.display = "none";
+                golemSprite.classList.add('golem-walking');
+                golem.style.transition = "all 6s linear";
+                
+                // 終界龍緩緩飛回天空 (8秒)
+                dragon.style.top = "-600px";
+                golem.style.left = "110%";
+                
+                setTimeout(() => {
+                    golemCount = 0;
+                    document.getElementById('golemCount').innerText = 0;
+                    resetActor(golem, "-260px");
+                }, 8500);
+            }, 8500);
+        }
+
+        function resetActor(el, pos) {
+            const golemSprite = document.getElementById('golemSprite');
+            golemSprite.classList.remove('golem-walking');
+            el.style.transition = "none";
+            el.style.left = pos;
+            setTimeout(() => {
+                el.style.transition = "all 6s linear";
+                isBusy = false;
+                document.getElementById('addBtn').disabled = false;
+                catCount = 0;
+                document.getElementById('catCount').innerText = 0;
+                updateEnvironment();
+            }, 50);
+        }
+
+        function updateEnvironment() {
+            const dark = Math.min(catCount * 3, 75);
+            document.body.style.filter = `brightness(${100 - dark}%)`;
+            document.getElementById('sun').style.transform = `translateY(${catCount * 12}px)`;
+        }
+
+        function endGame() {
+            isGameOver = true;
+            document.getElementById('idleOverlay').style.display = 'flex';
+        }
+
+        window.onload = initBackground;
+    </script>
+</body>
+</html>

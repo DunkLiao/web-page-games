@@ -41,6 +41,13 @@
     - **技術**: HTML5, Tailwind CSS, JavaScript
     - **語言**: 繁體中文
 
+### 6. Minecraft 貓咪牧場 - 終界龍慢速降臨 (Ender Dragon Sleep)
+
+    - **文件**: `ender_dragon_sleep.html`
+    - **描述**: 點擊生成貓咪，隨著貓咪數量增加天色逐漸變暗。貓咪超過 10 隻將召喚鐵巨人巡場，第三次巡場會引來終界龍慢速降臨並送上安眠訊息。閒置 5 分鐘進入睡眠結算。
+    - **技術**: HTML5, Tailwind CSS, JavaScript
+    - **語言**: 繁體中文
+
 ## 🛠️ 技術棧
 
 - **前端框架**: HTML5, CSS3, JavaScript
@@ -56,6 +63,7 @@ web-page-games/
 ├── PickRedPocker.html        # 撿紅點 - 大正浪漫綺譚
 ├── bondi-vb-toss.html         # 夏日邦迪海灘丟水球 - VB 版
 ├── creeper_run.html           # MINECRAFT 苦力怕紅綠燈：爆炸版
+├── ender_dragon_sleep.html    # Minecraft 貓咪牧場 - 終界龍慢速降臨
 ├── index.html                # 遊戲集合首頁
 └── README.md                 # 說明文件
 ```
@@ -88,4 +96,4 @@ DunkLiao
 
 ---
 
-**最後更新**: 2026年2月7日
+**最後更新**: 2026年2月14日
