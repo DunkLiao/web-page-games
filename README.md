@@ -48,6 +48,13 @@
     - **技術**: HTML5, Tailwind CSS, JavaScript
     - **語言**: 繁體中文
 
+### 7. 吉伊卡哇：小藍車拔草大衝刺 (Chiikawa Weeding Dash)
+
+    - **文件**: `chiikawa_weeding_dash.html`
+    - **描述**: 五軌道躲避衝刺遊戲。可調整衝刺速度與討伐頻率，閃避障礙、衝高分數並刷新最高紀錄。
+    - **技術**: HTML5 Canvas, Tailwind CSS, JavaScript
+    - **語言**: 繁體中文
+
 ## 🛠️ 技術棧
 
 - **前端框架**: HTML5, CSS3, JavaScript
@@ -64,6 +71,7 @@ web-page-games/
 ├── bondi-vb-toss.html         # 夏日邦迪海灘丟水球 - VB 版
 ├── creeper_run.html           # MINECRAFT 苦力怕紅綠燈：爆炸版
 ├── ender_dragon_sleep.html    # Minecraft 貓咪牧場 - 終界龍慢速降臨
+├── chiikawa_weeding_dash.html # 吉伊卡哇：小藍車拔草大衝刺
 ├── index.html                # 遊戲集合首頁
 └── README.md                 # 說明文件
 ```
