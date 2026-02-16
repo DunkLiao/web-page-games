@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>肥尾大冒險：豹紋守宮的蟲蟲計時賽</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            /* 允許網頁正常捲動 */
+            touch-action: pan-y;
+            user-select: none;
+            background-color: #fef3c7; 
+            font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+            -webkit-overflow-scrolling: touch;
+        }
+        #game-canvas {
+            max-width: 100%;
+            height: auto;
+            border-radius: 12px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            background-color: #fffbeb;
+            /* 僅在畫布上禁用觸控預設行為，防止滑動時移動網頁 */
+            touch-action: none;
+        }
+        .control-btn {
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+        .control-btn:active {
+            transform: scale(0.9);
+            background-color: #fffbeb;
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center min-h-screen p-4 overflow-y-auto">
+
+    <!-- 標題區域 -->
+    <div class="w-full max-w-md text-center mb-4">
+        <h1 class="text-3xl font-black text-amber-600 mb-1">🦎 肥尾大冒險</h1>
+        <p class="text-amber-800 text-sm mb-3">豹紋守宮的蟲蟲計時挑戰！</p>
+        
+        <div class="flex justify-between items-center bg-white/80 backdrop-blur-sm p-3 rounded-xl shadow-sm border border-amber-200">
+            <div class="flex flex-col items-start">
+                <span class="text-xs text-amber-700 font-bold uppercase">關卡</span>
+                <span id="level-display" class="text-xl font-black text-amber-900">1</span>
+            </div>
+            <div class="flex flex-col items-center">
+                <span class="text-xs text-amber-700 font-bold uppercase">時間</span>
+                <span id="timer-display" class="text-xl font-black text-amber-900">00:00</span>
+            </div>
+            <div class="flex flex-col items-center">
+                <span class="text-xs text-amber-700 font-bold uppercase">步數</span>
+                <span id="steps-display" class="text-xl font-black text-amber-900">0</span>
+            </div>
+            <div class="flex flex-col items-end">
+                <span class="text-xs text-amber-700 font-bold uppercase">難度</span>
+                <span id="difficulty-display" class="text-sm font-bold text-amber-600">普通</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 遊戲區域 -->
+    <div class="relative bg-amber-700 p-3 rounded-2xl shadow-2xl border-4 border-amber-800">
+        <canvas id="game-canvas"></canvas>
+        
+        <!-- 勝利畫面 -->
+        <div id="win-modal" class="absolute inset-0 bg-amber-900/80 flex flex-col items-center justify-center hidden rounded-xl backdrop-blur-md z-20">
+            <div class="bg-white p-6 rounded-3xl text-center shadow-2xl border-4 border-amber-400 max-w-[85%]">
+                <div class="text-5xl mb-2">😋</div>
+                <h2 class="text-2xl font-black text-amber-700 mb-1">好吃的麵包蟲！</h2>
+                <div class="bg-amber-50 p-3 rounded-xl mb-4">
+                    <p class="text-sm text-amber-800 font-bold">完成時間：<span id="final-time" class="text-lg">00:00</span></p>
+                    <p class="text-xs text-amber-600">總步數：<span id="final-steps">0</span> 步</p>
+                </div>
+                <button id="next-level-btn" class="bg-amber-500 hover:bg-amber-600 text-white font-black py-3 px-8 rounded-2xl shadow-lg transition-all active:translate-y-1 w-full">下一關挑戰</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 控制按鈕 (在桌機版本隱藏，行動版顯示) -->
+    <div class="grid grid-cols-3 gap-3 mt-8 pb-4 w-full max-w-[280px] md:hidden">
+        <div></div>
+        <button id="btn-up" class="control-btn w-16 h-16 bg-white border-b-4 border-amber-200 rounded-2xl flex items-center justify-center text-2xl shadow-lg">⬆️</button>
+        <div></div>
+        <button id="btn-left" class="control-btn w-16 h-16 bg-white border-b-4 border-amber-200 rounded-2xl flex items-center justify-center text-2xl shadow-lg">⬅️</button>
+        <button id="btn-down" class="control-btn w-16 h-16 bg-white border-b-4 border-amber-200 rounded-2xl flex items-center justify-center text-2xl shadow-lg">⬇️</button>
+        <button id="btn-right" class="control-btn w-16 h-16 bg-white border-b-4 border-amber-200 rounded-2xl flex items-center justify-center text-2xl shadow-lg">➡️</button>
+    </div>
+
+    <!-- 設定列 -->
+    <div class="mt-4 mb-12 flex items-center gap-3">
+        <select id="difficulty-select" class="bg-white border-2 border-amber-200 text-amber-900 font-bold py-2 px-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-sm text-sm">
+            <option value="10">簡單</option>
+            <option value="15" selected>普通</option>
+            <option value="25">困難</option>
+        </select>
+        <button id="reset-btn" class="bg-amber-100 hover:bg-amber-200 text-amber-800 font-bold py-2 px-5 rounded-xl transition-all border border-amber-200 text-sm">重新開始</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d');
+        const stepsDisplay = document.getElementById('steps-display');
+        const levelDisplay = document.getElementById('level-display');
+        const timerDisplay = document.getElementById('timer-display');
+        const difficultyDisplay = document.getElementById('difficulty-display');
+        const difficultySelect = document.getElementById('difficulty-select');
+        const nextLevelBtn = document.getElementById('next-level-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const winModal = document.getElementById('win-modal');
+        const finalTimeDisplay = document.getElementById('final-time');
+        const finalStepsDisplay = document.getElementById('final-steps');
+
+        let gridSize = 15;
+        let cellSize = 0;
+        let maze = [];
+        let player = { x: 0, y: 0 };
+        let goal = { x: 0, y: 0 };
+        let steps = 0;
+        let level = 1;
+
+        // 計時器相關
+        let seconds = 0;
+        let timerInterval = null;
+        let gameStarted = false;
+
+        function startTimer() {
+            if (timerInterval) return;
+            timerInterval = setInterval(() => {
+                seconds++;
+                updateTimerUI();
+            }, 1000);
+        }
+
+        function stopTimer() {
+            clearInterval(timerInterval);
+            timerInterval = null;
+        }
+
+        function updateTimerUI() {
+            const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
+            const secs = (seconds % 60).toString().padStart(2, '0');
+            timerDisplay.innerText = `${mins}:${secs}`;
+        }
+
+        function initGame() {
+            stopTimer();
+            gridSize = parseInt(difficultySelect.value);
+            const size = Math.min(window.innerWidth - 60, 450);
+            canvas.width = size;
+            canvas.height = size;
+            cellSize = canvas.width / gridSize;
+            difficultyDisplay.innerText = difficultySelect.options[difficultySelect.selectedIndex].text;
+            
+            generateMaze();
+            player = { x: 0, y: 0 };
+            goal = { x: gridSize - 1, y: gridSize - 1 };
+            
+            steps = 0;
+            seconds = 0;
+            gameStarted = false;
+            
+            stepsDisplay.innerText = steps;
+            updateTimerUI();
+            winModal.classList.add('hidden');
+            draw();
+        }
+
+        function generateMaze() {
+            maze = Array(gridSize).fill().map(() => Array(gridSize).fill().map(() => ({
+                visited: false,
+                walls: { top: true, right: true, bottom: true, left: true }
+            })));
+
+            const stack = [];
+            const startNode = { x: 0, y: 0 };
+            maze[0][0].visited = true;
+            stack.push(startNode);
+
+            while (stack.length > 0) {
+                const current = stack[stack.length - 1];
+                const neighbors = getUnvisitedNeighbors(current.x, current.y);
+
+                if (neighbors.length > 0) {
+                    const next = neighbors[Math.floor(Math.random() * neighbors.length)];
+                    removeWalls(current, next);
+                    maze[next.y][next.x].visited = true;
+                    stack.push(next);
+                } else {
+                    stack.pop();
+                }
+            }
+        }
+
+        function getUnvisitedNeighbors(x, y) {
+            const neighbors = [];
+            if (y > 0 && !maze[y - 1][x].visited) neighbors.push({ x: x, y: y - 1 });
+            if (y < gridSize - 1 && !maze[y + 1][x].visited) neighbors.push({ x: x, y: y + 1 });
+            if (x > 0 && !maze[y][x - 1].visited) neighbors.push({ x: x - 1, y: y });
+            if (x < gridSize - 1 && !maze[y][x + 1].visited) neighbors.push({ x: x + 1, y: y });
+            return neighbors;
+        }
+
+        function removeWalls(a, b) {
+            if (a.x === b.x) {
+                if (a.y > b.y) { 
+                    maze[a.y][a.x].walls.top = false; 
+                    maze[b.y][b.x].walls.bottom = false; 
+                } else { 
+                    maze[a.y][a.x].walls.bottom = false; 
+                    maze[b.y][b.x].walls.top = false; 
+                }
+            } else if (a.y === b.y) {
+                if (a.x > b.x) { 
+                    maze[a.y][a.x].walls.left = false; 
+                    maze[b.y][b.x].walls.right = false; 
+                } else { 
+                    maze[a.y][a.x].walls.right = false; 
+                    maze[b.y][b.x].walls.left = false; 
+                }
+            }
+        }
+
+        function drawLeopardGecko(x, y) {
+            const centerX = x * cellSize + cellSize / 2;
+            const centerY = y * cellSize + cellSize / 2;
+            const size = cellSize * 0.8;
+            ctx.save();
+            ctx.translate(centerX, centerY);
+            
+            // 守宮配色與繪製
+            ctx.fillStyle = '#fbbf24'; 
+            ctx.beginPath();
+            ctx.ellipse(-size/4, size/6, size/3, size/5, Math.PI/4, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.beginPath();
+            ctx.ellipse(0, 0, size/2.5, size/4, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.ellipse(size/3, -size/8, size/4, size/5, -Math.PI/10, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#1e1b4b';
+            [[0,0], [size/6, size/10], [-size/6, -size/10], [size/3, -size/10], [-size/4, size/8]].forEach(s => {
+                ctx.beginPath(); ctx.arc(s[0], s[1], size/20, 0, Math.PI * 2); ctx.fill();
+            });
+
+            ctx.fillStyle = 'black';
+            ctx.beginPath(); ctx.arc(size/2.5, -size/6, size/25, 0, Math.PI * 2); ctx.fill();
+            ctx.restore();
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = '#92400e';
+            ctx.lineWidth = Math.max(2, cellSize / 10);
+            ctx.lineCap = 'round';
+
+            for (let y = 0; y < gridSize; y++) {
+                for (let x = 0; x < gridSize; x++) {
+                    const cell = maze[y][x];
+                    const px = x * cellSize; 
+                    const py = y * cellSize;
+                    if (cell.walls.top) { ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px + cellSize, py); ctx.stroke(); }
+                    if (cell.walls.right) { ctx.beginPath(); ctx.moveTo(px + cellSize, py); ctx.lineTo(px + cellSize, py + cellSize); ctx.stroke(); }
+                    if (cell.walls.bottom) { ctx.beginPath(); ctx.moveTo(px, py + cellSize); ctx.lineTo(px + cellSize, py + cellSize); ctx.stroke(); }
+                    if (cell.walls.left) { ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px, py + cellSize); ctx.stroke(); }
+                }
+            }
+
+            // 繪製目標：麵包蟲
+            ctx.font = `${cellSize * 0.7}px Arial`;
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText('🐛', goal.x * cellSize + cellSize / 2, goal.y * cellSize + cellSize / 2);
+
+            // 繪製主角：豹紋守宮
+            drawLeopardGecko(player.x, player.y);
+        }
+
+        function move(dir) {
+            if (!winModal.classList.contains('hidden')) return;
+            
+            // 第一次移動時啟動計時器
+            if (!gameStarted) {
+                gameStarted = true;
+                startTimer();
+            }
+
+            const currentCell = maze[player.y][player.x];
+            let moved = false;
+            if (dir === 'up' && !currentCell.walls.top) { player.y--; moved = true; }
+            else if (dir === 'down' && !currentCell.walls.bottom) { player.y++; moved = true; }
+            else if (dir === 'left' && !currentCell.walls.left) { player.x--; moved = true; }
+            else if (dir === 'right' && !currentCell.walls.right) { player.x++; moved = true; }
+            
+            if (moved) {
+                steps++; 
+                stepsDisplay.innerText = steps; 
+                draw();
+                if (player.x === goal.x && player.y === goal.y) {
+                    stopTimer();
+                    finalTimeDisplay.innerText = timerDisplay.innerText;
+                    finalStepsDisplay.innerText = steps;
+                    winModal.classList.remove('hidden');
+                }
+            }
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (['ArrowUp', 'w', 'W'].includes(e.key)) { e.preventDefault(); move('up'); }
+            if (['ArrowDown', 's', 'S'].includes(e.key)) { e.preventDefault(); move('down'); }
+            if (['ArrowLeft', 'a', 'A'].includes(e.key)) { e.preventDefault(); move('left'); }
+            if (['ArrowRight', 'd', 'D'].includes(e.key)) { e.preventDefault(); move('right'); }
+        });
+
+        document.getElementById('btn-up').onclick = () => move('up');
+        document.getElementById('btn-down').onclick = () => move('down');
+        document.getElementById('btn-left').onclick = () => move('left');
+        document.getElementById('btn-right').onclick = () => move('right');
+        
+        nextLevelBtn.onclick = () => { level++; levelDisplay.innerText = level; initGame(); };
+        resetBtn.onclick = () => { level = 1; levelDisplay.innerText = level; initGame(); };
+        difficultySelect.onchange = initGame;
+        
+        window.onload = initGame;
+        window.addEventListener('resize', initGame);
+    </script>
+</body>
+</html>
