@@ -17,19 +17,31 @@
         #game-canvas {
             max-width: 100%;
             height: auto;
-            border-radius: 12px;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            border-radius: 20px;
+            box-shadow: 0 10px 25px -5px rgba(146, 64, 14, 0.3);
             background-color: #fffbeb;
             /* 僅在畫布上禁用觸控預設行為，防止滑動時移動網頁 */
             touch-action: none;
         }
+        /* 可愛按鈕風格 */
         .control-btn {
+            background: linear-gradient(to bottom, #ffffff, #fffbeb);
+            border-bottom: 6px solid #f59e0b;
+            border-radius: 9999px;
+            transition: all 0.1s ease;
             -webkit-tap-highlight-color: transparent;
             touch-action: manipulation;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
         .control-btn:active {
-            transform: scale(0.9);
-            background-color: #fffbeb;
+            border-bottom-width: 0;
+            transform: translateY(6px);
+            background: #fffbeb;
+            box-shadow: none;
         }
     </style>
 </head>
@@ -37,65 +49,71 @@
 
     <!-- 標題區域 -->
     <div class="w-full max-w-md text-center mb-4">
-        <h1 class="text-3xl font-black text-amber-600 mb-1">🦎 肥尾大冒險</h1>
-        <p class="text-amber-800 text-sm mb-3">豹紋守宮的蟲蟲計時挑戰！</p>
+        <h1 class="text-3xl font-black text-amber-600 mb-1 drop-shadow-sm">🦎 肥尾大冒險</h1>
+        <p class="text-amber-800 text-sm mb-3 font-bold">小豹紋守宮的蟲蟲挑戰！</p>
         
-        <div class="flex justify-between items-center bg-white/80 backdrop-blur-sm p-3 rounded-xl shadow-sm border border-amber-200">
+        <div class="flex justify-between items-center bg-white/90 backdrop-blur-sm p-3 rounded-2xl shadow-sm border-2 border-amber-200">
             <div class="flex flex-col items-start">
-                <span class="text-xs text-amber-700 font-bold uppercase">關卡</span>
+                <span class="text-[10px] text-amber-700 font-black uppercase tracking-wider">關卡</span>
                 <span id="level-display" class="text-xl font-black text-amber-900">1</span>
             </div>
             <div class="flex flex-col items-center">
-                <span class="text-xs text-amber-700 font-bold uppercase">時間</span>
+                <span class="text-[10px] text-amber-700 font-black uppercase tracking-wider">時間</span>
                 <span id="timer-display" class="text-xl font-black text-amber-900">00:00</span>
             </div>
             <div class="flex flex-col items-center">
-                <span class="text-xs text-amber-700 font-bold uppercase">步數</span>
+                <span class="text-[10px] text-amber-700 font-black uppercase tracking-wider">步數</span>
                 <span id="steps-display" class="text-xl font-black text-amber-900">0</span>
             </div>
             <div class="flex flex-col items-end">
-                <span class="text-xs text-amber-700 font-bold uppercase">難度</span>
+                <span class="text-[10px] text-amber-700 font-black uppercase tracking-wider">難度</span>
                 <span id="difficulty-display" class="text-sm font-bold text-amber-600">普通</span>
             </div>
         </div>
     </div>
 
     <!-- 遊戲區域 -->
-    <div class="relative bg-amber-700 p-3 rounded-2xl shadow-2xl border-4 border-amber-800">
+    <div class="relative bg-amber-800 p-2.5 rounded-[24px] shadow-2xl border-4 border-amber-900">
         <canvas id="game-canvas"></canvas>
         
         <!-- 勝利畫面 -->
-        <div id="win-modal" class="absolute inset-0 bg-amber-900/80 flex flex-col items-center justify-center hidden rounded-xl backdrop-blur-md z-20">
-            <div class="bg-white p-6 rounded-3xl text-center shadow-2xl border-4 border-amber-400 max-w-[85%]">
-                <div class="text-5xl mb-2">😋</div>
-                <h2 class="text-2xl font-black text-amber-700 mb-1">好吃的麵包蟲！</h2>
-                <div class="bg-amber-50 p-3 rounded-xl mb-4">
-                    <p class="text-sm text-amber-800 font-bold">完成時間：<span id="final-time" class="text-lg">00:00</span></p>
-                    <p class="text-xs text-amber-600">總步數：<span id="final-steps">0</span> 步</p>
+        <div id="win-modal" class="absolute inset-0 bg-amber-900/80 flex flex-col items-center justify-center hidden rounded-[20px] backdrop-blur-md z-20">
+            <div class="bg-white p-6 rounded-[32px] text-center shadow-2xl border-4 border-amber-400 max-w-[85%] transform scale-105">
+                <div class="text-6xl mb-3">😋</div>
+                <h2 class="text-2xl font-black text-amber-700 mb-1">抓到了！好滿足</h2>
+                <div class="bg-amber-50 p-4 rounded-2xl mb-5 border border-amber-100">
+                    <p class="text-sm text-amber-800 font-bold">耗時：<span id="final-time" class="text-xl">00:00</span></p>
+                    <p class="text-xs text-amber-600 font-medium">使用了 <span id="final-steps">0</span> 步</p>
                 </div>
-                <button id="next-level-btn" class="bg-amber-500 hover:bg-amber-600 text-white font-black py-3 px-8 rounded-2xl shadow-lg transition-all active:translate-y-1 w-full">下一關挑戰</button>
+                <button id="next-level-btn" class="bg-amber-500 hover:bg-amber-600 text-white font-black py-4 px-10 rounded-full shadow-[0_6px_0_#d97706] transition-all active:shadow-none active:translate-y-[6px] w-full text-lg">
+                    繼續冒險 ✨
+                </button>
             </div>
         </div>
     </div>
 
-    <!-- 控制按鈕 (在桌機版本隱藏，行動版顯示) -->
-    <div class="grid grid-cols-3 gap-3 mt-8 pb-4 w-full max-w-[280px] md:hidden">
-        <div></div>
-        <button id="btn-up" class="control-btn w-16 h-16 bg-white border-b-4 border-amber-200 rounded-2xl flex items-center justify-center text-2xl shadow-lg">⬆️</button>
-        <div></div>
-        <button id="btn-left" class="control-btn w-16 h-16 bg-white border-b-4 border-amber-200 rounded-2xl flex items-center justify-center text-2xl shadow-lg">⬅️</button>
-        <button id="btn-down" class="control-btn w-16 h-16 bg-white border-b-4 border-amber-200 rounded-2xl flex items-center justify-center text-2xl shadow-lg">⬇️</button>
-        <button id="btn-right" class="control-btn w-16 h-16 bg-white border-b-4 border-amber-200 rounded-2xl flex items-center justify-center text-2xl shadow-lg">➡️</button>
+    <!-- 控制按鈕區 (現在始終顯示) -->
+    <div class="flex flex-col items-center mt-8 pb-4 w-full max-w-[280px]">
+        <div class="grid grid-cols-3 gap-4">
+            <div></div>
+            <button id="btn-up" class="control-btn w-16 h-16">⬆️</button>
+            <div></div>
+            <button id="btn-left" class="control-btn w-16 h-16">⬅️</button>
+            <button id="btn-down" class="control-btn w-16 h-16">⬇️</button>
+            <button id="btn-right" class="control-btn w-16 h-16">➡️</button>
+        </div>
     </div>
 
-    <!-- 設定列 -->
-    <div class="mt-4 mb-12 flex items-center gap-3">
-        <select id="difficulty-select" class="bg-white border-2 border-amber-200 text-amber-900 font-bold py-2 px-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-sm text-sm">
-            <option value="10">簡單</option>
-            <option value="15" selected>普通</option>
-            <option value="25">困難</option>
+    <!-- 設定與控制列 -->
+    <div class="mt-4 mb-12 flex items-center gap-3 w-full max-w-md justify-center">
+        <select id="difficulty-select" class="bg-white border-2 border-amber-200 text-amber-900 font-black py-2.5 px-4 rounded-2xl focus:outline-none focus:ring-4 focus:ring-amber-500/20 shadow-sm text-sm cursor-pointer">
+            <option value="10">簡單模式</option>
+            <option value="15" selected>普通模式</option>
+            <option value="25">困難模式</option>
         </select>
-        <button id="reset-btn" class="bg-amber-100 hover:bg-amber-200 text-amber-800 font-bold py-2 px-5 rounded-xl transition-all border border-amber-200 text-sm">重新開始</button>
+        <button id="reset-btn" class="bg-amber-100 hover:bg-amber-200 text-amber-800 font-black py-2.5 px-6 rounded-2xl transition-all border-2 border-amber-200 text-sm shadow-sm active:scale-95">
+            重新開始
+        </button>
     </div>
 
     <script>
@@ -120,7 +138,7 @@
         let steps = 0;
         let level = 1;
 
-        // 計時器相關
+        // 計時器邏輯
         let seconds = 0;
         let timerInterval = null;
         let gameStarted = false;
@@ -151,7 +169,7 @@
             canvas.width = size;
             canvas.height = size;
             cellSize = canvas.width / gridSize;
-            difficultyDisplay.innerText = difficultySelect.options[difficultySelect.selectedIndex].text;
+            difficultyDisplay.innerText = difficultySelect.options[difficultySelect.selectedIndex].text.replace('模式', '');
             
             generateMaze();
             player = { x: 0, y: 0 };
@@ -222,6 +240,7 @@
             }
         }
 
+        // 繪製可愛的守宮主角
         function drawLeopardGecko(x, y) {
             const centerX = x * cellSize + cellSize / 2;
             const centerY = y * cellSize + cellSize / 2;
@@ -229,25 +248,31 @@
             ctx.save();
             ctx.translate(centerX, centerY);
             
-            // 守宮配色與繪製
+            // 守宮配色與身體結構
             ctx.fillStyle = '#fbbf24'; 
+            
+            // 肥尾巴 (核心特色)
             ctx.beginPath();
             ctx.ellipse(-size/4, size/6, size/3, size/5, Math.PI/4, 0, Math.PI * 2);
             ctx.fill();
             
+            // 圓圓的身體
             ctx.beginPath();
             ctx.ellipse(0, 0, size/2.5, size/4, 0, 0, Math.PI * 2);
             ctx.fill();
 
+            // 可愛的大頭
             ctx.beginPath();
             ctx.ellipse(size/3, -size/8, size/4, size/5, -Math.PI/10, 0, Math.PI * 2);
             ctx.fill();
 
+            // 豹紋斑點
             ctx.fillStyle = '#1e1b4b';
             [[0,0], [size/6, size/10], [-size/6, -size/10], [size/3, -size/10], [-size/4, size/8]].forEach(s => {
                 ctx.beginPath(); ctx.arc(s[0], s[1], size/20, 0, Math.PI * 2); ctx.fill();
             });
 
+            // 亮晶晶的小眼睛
             ctx.fillStyle = 'black';
             ctx.beginPath(); ctx.arc(size/2.5, -size/6, size/25, 0, Math.PI * 2); ctx.fill();
             ctx.restore();
@@ -276,14 +301,13 @@
             ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
             ctx.fillText('🐛', goal.x * cellSize + cellSize / 2, goal.y * cellSize + cellSize / 2);
 
-            // 繪製主角：豹紋守宮
+            // 繪製主角：肥尾守宮
             drawLeopardGecko(player.x, player.y);
         }
 
         function move(dir) {
             if (!winModal.classList.contains('hidden')) return;
             
-            // 第一次移動時啟動計時器
             if (!gameStarted) {
                 gameStarted = true;
                 startTimer();
@@ -309,6 +333,7 @@
             }
         }
 
+        // 鍵盤操控
         window.addEventListener('keydown', (e) => {
             if (['ArrowUp', 'w', 'W'].includes(e.key)) { e.preventDefault(); move('up'); }
             if (['ArrowDown', 's', 'S'].includes(e.key)) { e.preventDefault(); move('down'); }
@@ -316,6 +341,7 @@
             if (['ArrowRight', 'd', 'D'].includes(e.key)) { e.preventDefault(); move('right'); }
         });
 
+        // 按鈕點擊操控
         document.getElementById('btn-up').onclick = () => move('up');
         document.getElementById('btn-down').onclick = () => move('down');
         document.getElementById('btn-left').onclick = () => move('left');
