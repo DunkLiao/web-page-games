@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>釜山大發：札嘎其金網大冒險 - Busan Daebak Deluxe</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Noto+Sans+KR:wght@400;700&family=Noto+Sans+TC:wght@400;700&display=swap');
+
+        :root {
+            --port-blue: #0a3d62;
+            --lighthouse-red: #eb4d4b;
+            --ocean-dark: #071a2c;
+            --gold-glow: 0 0 20px #f1c40f, 0 0 40px #f39c12;
+            --korea-blue: #0047a0;
+            --korea-red: #cd2e3a;
+        }
+
+        body {
+            background: linear-gradient(to bottom, #071a2c 0%, #102a43 60%, #243b55 100%);
+            font-family: 'Noto Sans TC', 'Noto Sans KR', sans-serif;
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            overflow-x: hidden;
+            overflow-y: auto;
+            position: relative;
+            padding: 40px 0;
+        }
+
+        /* 漁港背景元件 */
+        .port-scenery { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+        .lighthouse {
+            position: absolute; bottom: 20%; right: 10%; width: 40px; height: 120px;
+            background: var(--lighthouse-red); clip-path: polygon(20% 0%, 80% 0%, 100% 100%, 0% 100%);
+        }
+        .lighthouse-light {
+            position: absolute; top: -5px; left: 50%; transform: translateX(-50%);
+            width: 60px; height: 25px; background: #f1c40f; filter: blur(15px);
+            animation: rotate-light 4s infinite linear;
+        }
+        @keyframes rotate-light { 
+            0%, 100% { opacity: 0.3; transform: translateX(-50%) scaleX(1); }
+            50% { opacity: 1; transform: translateX(-50%) scaleX(2.5); }
+        }
+
+        .fishing-boat {
+            position: absolute; bottom: 15%; left: 5%; width: 90px; height: 35px;
+            background: #111; clip-path: polygon(0% 0%, 100% 0%, 85% 100%, 15% 100%);
+            animation: boat-bob 4s infinite ease-in-out; opacity: 0.7;
+        }
+        @keyframes boat-bob { 0%, 100% { transform: translateY(0) rotate(0); } 50% { transform: translateY(-8px) rotate(3deg); } }
+
+        .port-waves {
+            position: fixed; bottom: 0; width: 200%; height: 100px;
+            background: rgba(0, 119, 190, 0.2); animation: wave-slide 20s infinite linear;
+            clip-path: polygon(0 40%, 10% 35%, 20% 45%, 30% 35%, 40% 45%, 50% 35%, 60% 45%, 70% 35%, 80% 45%, 90% 35%, 100% 45%, 100% 100%, 0 100%);
+        }
+        @keyframes wave-slide { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+        /* 韓國風格機台 */
+        .jagalchi-machine {
+            background: #1e2124; 
+            border: 8px solid #343a40; 
+            border-top-color: var(--korea-red);
+            border-bottom-color: var(--korea-blue);
+            border-radius: 30px;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.9); padding: 25px;
+            max-width: 520px; width: 95%; position: relative; z-index: 10;
+        }
+
+        /* 震撼震動效果 */
+        @keyframes shake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            20% { transform: translate(-3px, 0px) rotate(1deg); }
+            40% { transform: translate(1px, -1px) rotate(1deg); }
+            60% { transform: translate(-3px, 1px) rotate(0deg); }
+            80% { transform: translate(-1px, -1px) rotate(1deg); }
+            100% { transform: translate(1px, -2px) rotate(-1deg); }
+        }
+        .machine-shake { animation: shake 0.2s infinite; }
+
+        .bowl-inner {
+            background: #000; padding: 15px; border-radius: 20px;
+            border: 6px inset #222; margin-bottom: 20px;
+        }
+
+        .reel-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+
+        .reel {
+            height: 110px; background: white; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 3.5rem; position: relative; overflow: hidden;
+            box-shadow: inset 0 5px 15px rgba(0,0,0,0.6);
+            border: 2px solid #444;
+        }
+
+        .spinning { filter: blur(6px) grayscale(0.5); }
+
+        .winning-symbol {
+            z-index: 20; background: #fffde7 !important; border: 4px solid #f1c40f !important;
+            box-shadow: var(--gold-glow); animation: win-pulse 0.4s infinite alternate;
+        }
+        @keyframes win-pulse { 
+            from { transform: scale(1); } to { transform: scale(1.15); } 
+        }
+
+        /* 大獎橫幅 */
+        #win-banner {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0);
+            background: linear-gradient(135deg, #cd2e3a 0%, #0047a0 100%);
+            color: white; padding: 25px 50px; border-radius: 100px;
+            font-family: 'ZCOOL KuaiLe', 'Noto Sans KR', cursive; font-size: 2.5rem; font-weight: bold;
+            text-shadow: 2px 2px 10px rgba(0,0,0,0.5); border: 5px solid #f1c40f;
+            z-index: 100; pointer-events: none; transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 0 50px rgba(241, 196, 15, 0.8); text-align: center;
+        }
+        #win-banner.active { transform: translate(-50%, -50%) scale(1); }
+
+        .stat-panel {
+            background: rgba(0, 0, 0, 0.8); border-radius: 15px; padding: 12px 8px;
+            margin-bottom: 20px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;
+            border-bottom: 3px solid #f1c40f;
+        }
+
+        .bet-input {
+            background: #111; border: 1px solid #444; color: #f1c40f;
+            width: 60px; text-align: center; border-radius: 6px; font-weight: bold;
+            font-size: 1rem; outline: none;
+        }
+
+        .btn-jagalchi {
+            background: linear-gradient(to bottom, #cd2e3a, #9c1c25);
+            border-radius: 15px; color: #fff; font-weight: bold; font-size: 1.5rem;
+            padding: 16px; cursor: pointer; transition: all 0.2s;
+            box-shadow: 0 8px 0 #6e1319; width: 100%; font-family: 'Noto Sans KR', sans-serif;
+        }
+        .btn-jagalchi:active { transform: translateY(4px); box-shadow: 0 4px 0 #6e1319; }
+        .btn-jagalchi:disabled { opacity: 0.6; filter: grayscale(1); }
+
+        .korean-label { font-size: 0.6rem; color: #aaa; display: block; margin-bottom: 2px; white-space: nowrap; }
+        .stat-value { font-size: 1.1rem; }
+    </style>
+</head>
+<body>
+
+    <div class="port-scenery">
+        <div class="lighthouse"><div class="lighthouse-light"></div></div>
+        <div class="fishing-boat"></div>
+        <div class="port-waves"></div>
+    </div>
+
+    <div id="machine" class="jagalchi-machine">
+        <!-- 大獎橫幅內容 -->
+        <div id="win-banner">
+            <div style="font-size: 1.2rem; margin-bottom: 5px;">축하합니다!</div>
+            <div>대박! BIG WIN!</div>
+        </div>
+        
+        <div class="text-center mb-4">
+            <div class="text-[0.7rem] text-red-500 font-bold tracking-tighter">BUSAN JAGALCHI MARKET</div>
+            <h1 class="text-3xl font-bold text-yellow-500" style="font-family: 'ZCOOL KuaiLe';">
+                釜山大發：札嘎其金網大冒險 <span class="text-sm block text-gray-400 font-normal">부산 대박: 자갈치 황금 그물 어드벤처</span>
+            </h1>
+        </div>
+        
+        <div class="stat-panel">
+            <div class="text-center px-1">
+                <span class="korean-label">잔액 (預算)</span>
+                <p id="balance" class="stat-value text-yellow-400 font-mono font-bold">1000</p>
+            </div>
+            <div class="text-center px-1 border-x border-gray-700">
+                <span class="korean-label">최고 (最高)</span>
+                <p id="high-score" class="stat-value text-green-400 font-mono font-bold">1000</p>
+            </div>
+            <div class="text-center px-1 border-r border-gray-700">
+                <span class="korean-label">배팅 (叫價)</span>
+                <div class="flex items-center justify-center gap-1 mt-1">
+                    <button onclick="changeBet(-10)" class="w-6 h-6 bg-gray-700 rounded-full text-[12px] flex items-center justify-center hover:bg-gray-600 active:scale-90">-</button>
+                    <input type="number" id="bet-field" class="bet-input" value="10" min="10" onchange="validateBet()">
+                    <button onclick="changeBet(10)" class="w-6 h-6 bg-gray-700 rounded-full text-[12px] flex items-center justify-center hover:bg-gray-600 active:scale-90">+</button>
+                </div>
+            </div>
+            <div class="text-center px-1">
+                <span class="korean-label">라운드 (回合)</span>
+                <p id="round-count" class="stat-value text-cyan-400 font-mono font-bold">0</p>
+            </div>
+        </div>
+
+        <div class="bowl-inner">
+            <div class="reel-container">
+                <div id="reel-0" class="reel">🦀</div>
+                <div id="reel-1" class="reel">🦐</div>
+                <div id="reel-2" class="reel">🐚</div>
+                <div id="reel-3" class="reel">🐙</div>
+                <div id="reel-4" class="reel">🍳</div>
+                <div id="reel-5" class="reel">🐟</div>
+                <div id="reel-6" class="reel">🐚</div>
+                <div id="reel-7" class="reel">🦐</div>
+                <div id="reel-8" class="reel">🦀</div>
+            </div>
+        </div>
+
+        <div id="message" class="h-10 flex items-center justify-center text-center text-lg font-bold text-gray-400 mb-4 italic leading-tight">
+            어서 오세요! (歡迎光臨)
+        </div>
+
+        <button id="spin-btn" onclick="spin()" class="btn-jagalchi">
+            ⚓ 투망 시작 (下網收貨)
+        </button>
+
+        <div class="mt-4 p-2 bg-black/50 rounded-lg text-[9px] text-gray-500">
+            <div class="grid grid-cols-2 gap-x-4 gap-y-1">
+                <span class="flex justify-between">🦀 킹크랩 (帝王蟹): <b class="text-yellow-500">100x</b></span>
+                <span class="flex justify-between">🦐 새우 (鮮蝦): <b class="text-yellow-500">50x</b></span>
+                <span class="flex justify-between">🐚 가리비 (扇貝): <b class="text-yellow-500">20x</b></span>
+                <span class="flex justify-between">🍳 계란 (雞蛋): <b class="text-yellow-500">15x</b></span>
+                <span class="flex justify-between">🐙 문어 (章魚): <b class="text-yellow-500">10x</b></span>
+                <span class="flex justify-between">🐟 생선 (鮮魚): <b class="text-yellow-500">5x</b></span>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal" class="fixed inset-0 bg-black/95 hidden items-center justify-center z-50 p-4">
+        <div class="bg-gray-800 border-4 border-red-600 p-10 rounded-3xl text-center shadow-2xl">
+            <h2 class="text-3xl font-bold mb-4 text-white" style="font-family: 'Noto Sans KR';">재산 탕진!</h2>
+            <p id="modal-text" class="mb-8 text-gray-300">札嘎其港口今天休市了。請重新準備金幣再戰。</p>
+            <button onclick="resetGame()" class="bg-red-600 hover:bg-red-500 text-white font-bold py-3 px-10 rounded-full text-xl transition-all">다시 시작 (重新開始)</button>
+        </div>
+    </div>
+
+    <script>
+        const SYMBOLS = ['🌶️', '🥬', '🐟', '🐙', '🍳', '🐚', '🦐', '🦀']; 
+        const PAYOUTS = { '🦀': 100, '🦐': 50, '🐚': 20, '🍳': 15, '🐙': 10, '🐟': 5, '🥬': 3, '🌶️': 2 };
+
+        let balance = 1000;
+        let highScore = 1000;
+        let bet = 10;
+        let roundCount = 0;
+        let isSpinning = false;
+
+        const machine = document.getElementById('machine');
+        const balanceDisplay = document.getElementById('balance');
+        const highScoreDisplay = document.getElementById('high-score');
+        const roundDisplay = document.getElementById('round-count');
+        const betField = document.getElementById('bet-field');
+        const spinBtn = document.getElementById('spin-btn');
+        const messageDisplay = document.getElementById('message');
+        const winBanner = document.getElementById('win-banner');
+
+        function validateBet() {
+            let val = parseInt(betField.value);
+            if (isNaN(val) || val < 10) val = 10;
+            if (val > balance) val = balance;
+            bet = val;
+            betField.value = bet;
+        }
+
+        function changeBet(amount) {
+            if (isSpinning) return;
+            let currentVal = parseInt(betField.value) || 10;
+            betField.value = currentVal + amount;
+            validateBet();
+        }
+
+        async function spin() {
+            if (isSpinning) return;
+            validateBet();
+            
+            if (balance < bet) {
+                showModal("돈이 없어요", "金幣不足，請重新開始。");
+                return;
+            }
+
+            isSpinning = true;
+            spinBtn.disabled = true;
+            betField.disabled = true;
+            balance -= bet;
+            roundCount++;
+            updateUI();
+            
+            messageDisplay.innerText = "조업 중... (捕魚中...) ⚓";
+            messageDisplay.className = "h-10 flex items-center justify-center text-center text-lg font-bold text-yellow-500 mb-4 animate-pulse";
+            winBanner.classList.remove('active');
+            document.querySelectorAll('.reel').forEach(r => r.classList.remove('winning-symbol'));
+
+            const results = [];
+            const spinPromises = [];
+            for (let i = 0; i < 9; i++) {
+                const finalSymbol = SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)];
+                results.push(finalSymbol);
+                spinPromises.push(animateReel(i, finalSymbol));
+            }
+
+            await Promise.all(spinPromises);
+            checkWin(results);
+            
+            isSpinning = false;
+            spinBtn.disabled = false;
+            betField.disabled = false;
+        }
+
+        function animateReel(id, finalSymbol) {
+            return new Promise(resolve => {
+                const reel = document.getElementById(`reel-${id}`);
+                reel.classList.add('spinning');
+                let count = 0;
+                const max = 15 + id * 4;
+                const interval = setInterval(() => {
+                    reel.innerText = SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)];
+                    if (++count >= max) {
+                        clearInterval(interval);
+                        reel.innerText = finalSymbol;
+                        reel.classList.remove('spinning');
+                        resolve();
+                    }
+                }, 60);
+            });
+        }
+
+        function checkWin(results) {
+            const lines = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+            let totalWin = 0;
+            const winners = new Set();
+            const winningSymbolsSet = new Set();
+
+            lines.forEach(line => {
+                const [a, b, c] = line;
+                if (results[a] === results[b] && results[b] === results[c]) {
+                    const symbol = results[a];
+                    totalWin += bet * PAYOUTS[symbol];
+                    line.forEach(idx => winners.add(idx));
+                    winningSymbolsSet.add(symbol);
+                }
+            });
+
+            if (totalWin > 0) {
+                balance += totalWin;
+                if (balance > highScore) highScore = balance;
+                updateUI();
+                winners.forEach(idx => document.getElementById(`reel-${idx}`).classList.add('winning-symbol'));
+                const symbolsStr = Array.from(winningSymbolsSet).join('');
+                triggerMegaEffect(totalWin, symbolsStr);
+            } else {
+                messageDisplay.innerText = "다음에 다시... (下次會更好)";
+                messageDisplay.className = "h-10 flex items-center justify-center text-center text-lg font-bold text-gray-500 mb-4";
+                if (balance < 10) setTimeout(() => showModal("遊戲結束", "所有的財產都輸光了。"), 800);
+            }
+        }
+
+        function triggerMegaEffect(amount, symbolsStr) {
+            machine.classList.add('machine-shake');
+            winBanner.innerText = `BIG WIN: ${amount}!`;
+            winBanner.classList.add('active');
+            
+            const cheers = ["축하합니다!", "대박 터졌네!", "만선이다!"];
+            const randomCheer = cheers[Math.floor(Math.random() * cheers.length)];
+            
+            messageDisplay.innerHTML = `${randomCheer}<br>獲得 ${amount} 分！${symbolsStr}`;
+            messageDisplay.className = "h-10 flex items-center justify-center text-center text-xl font-bold text-yellow-400 mb-4";
+            
+            setTimeout(() => machine.classList.remove('machine-shake'), 1500);
+        }
+
+        function updateUI() {
+            balanceDisplay.innerText = balance;
+            highScoreDisplay.innerText = highScore;
+            roundDisplay.innerText = roundCount;
+        }
+
+        function showModal(title, text) {
+            document.querySelector('#modal h2').innerText = title;
+            document.getElementById('modal-text').innerText = text;
+            document.getElementById('modal').classList.replace('hidden', 'flex');
+        }
+
+        function resetGame() {
+            balance = 1000; roundCount = 0; bet = 10;
+            updateUI(); betField.value = 10;
+            document.getElementById('modal').classList.replace('flex', 'hidden');
+            winBanner.classList.remove('active');
+            messageDisplay.innerText = "새로운 조업 시작! (開始新的航程)";
+            messageDisplay.className = "h-10 flex items-center justify-center text-center text-lg font-bold text-gray-400 mb-4";
+        }
+
+        window.onload = updateUI;
+    </script>
+</body>
+</html>
