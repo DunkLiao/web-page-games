@@ -69,6 +69,13 @@
     - **技術**: HTML5, Tailwind CSS, JavaScript
     - **語言**: 繁體中文 / 韓文
 
+### 10. 普通兄妹的搞笑對決 (Funny Sibling Duel)
+
+    - **文件**: `funny_sibling_duel.html`
+    - **描述**: 漫畫風格的打地鼠式遊戲。9個洞口、兄妹角色隨機跳出，玩家需在限時內快速點擊得分。可調整戰鬥秒數、跳出頻率與角色出現比例，獨特的手繪SVG角色與砰砰特效。
+    - **技術**: HTML5, SVG, Tailwind CSS, JavaScript
+    - **語言**: 繁體中文
+
 ## 🛠️ 技術棧
 
 - **前端框架**: HTML5, CSS3, JavaScript
@@ -88,6 +95,7 @@ web-page-games/
 ├── chiikawa_weeding_dash.html # 吉伊卡哇：小藍車拔草大衝刺
 ├── fat_tail_gecko_race.html    # 肥尾大冒險：豹紋守宮的蟲蟲計時賽
 ├── busan_jagalchi_deluxe.html  # 釜山大發：札嘎其金網大冒險
+├── funny_sibling_duel.html     # 普通兄妹的搞笑對決
 ├── index.html                # 遊戲集合首頁
 └── README.md                 # 說明文件
 ```
@@ -120,4 +128,4 @@ DunkLiao
 
 ---
 
-**最後更新**: 2026年2月14日
+**最後更新**: 2026年2月21日

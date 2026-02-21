@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>普通兄妹的搞笑對決</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&display=swap');
+
+        :root {
+            --sky-blue: #4fc3f7;
+            --comic-yellow: #fff100;
+            --comic-green: #4caf50;
+            --comic-orange: #ff9800;
+            --comic-pink: #ff4081; /* 核心粉紅立體投影色 */
+            --outline: #000;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'ZCOOL KuaiLe', cursive, sans-serif;
+            background-color: var(--sky-blue);
+            background-image: 
+                radial-gradient(circle at 20% 20%, white 0%, white 5%, transparent 6%),
+                radial-gradient(circle at 80% 40%, white 0%, white 8%, transparent 9%),
+                radial-gradient(circle at 40% 80%, white 0%, white 4%, transparent 5%);
+            margin: 0;
+            padding: 10px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            overflow-x: hidden;
+        }
+
+        /* 標題優化：確保全黃色填充 + 黑色硬邊 + 粉紅立體感 */
+        .book-title-container {
+            margin: 35px 0 25px 0;
+            text-align: center;
+            position: relative;
+        }
+
+        .book-title {
+            font-size: 4.8rem;
+            font-weight: 900;
+            color: var(--comic-yellow);
+            /* 強制黃色填充，解決特定瀏覽器黑成一團的問題 */
+            -webkit-text-fill-color: var(--comic-yellow);
+            letter-spacing: -2px;
+            line-height: 0.95;
+            font-style: italic;
+            display: block;
+            transform: skew(-5deg);
+            /* 使用多層次陰影堆疊出清晰的邊框與立體層 */
+            text-shadow: 
+                -1.5px -1.5px 0 var(--outline),  
+                 1.5px -1.5px 0 var(--outline),
+                -1.5px  1.5px 0 var(--outline),
+                 1.5px  1.5px 0 var(--outline),
+                 3.5px  3.5px 0 var(--outline),
+                 7.5px  7.5px 0 var(--comic-pink);
+        }
+
+        .slogan-capsule {
+            background: var(--comic-pink);
+            color: white;
+            padding: 6px 30px;
+            border-radius: 50px;
+            font-size: 1.4rem;
+            font-weight: 900;
+            display: inline-block;
+            border: 4px solid var(--outline);
+            margin-top: 12px;
+            box-shadow: 4px 4px 0 var(--outline);
+            transform: rotate(3deg);
+            z-index: 2;
+            position: relative;
+        }
+
+        /* 設定面板 */
+        .settings-card {
+            background: #fdfdfd;
+            border: 4px solid var(--outline);
+            box-shadow: 6px 6px 0 var(--outline);
+            padding: 12px;
+            margin-bottom: 25px;
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            justify-content: center;
+            border-radius: 18px;
+        }
+
+        .setting-field {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .setting-field label {
+            font-size: 0.75rem;
+            font-weight: 900;
+            color: #444;
+        }
+
+        .setting-field input {
+            border: 2px solid var(--outline);
+            padding: 4px 8px;
+            width: 70px;
+            font-weight: bold;
+            border-radius: 8px;
+            outline: none;
+        }
+
+        .stat-badge {
+            background: var(--comic-yellow);
+            border: 3px solid var(--outline);
+            padding: 6px 14px;
+            font-weight: 900;
+            box-shadow: 3px 3px 0 var(--outline);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            min-width: 90px;
+            justify-content: center;
+        }
+
+        /* 遊戲區域 */
+        .playground {
+            width: 100%;
+            max-width: 440px;
+            background: #aed581;
+            border: 6px solid var(--outline);
+            padding: 15px;
+            box-shadow: 12px 12px 0 rgba(0,0,0,0.1);
+            border-radius: 30px;
+        }
+
+        .grid-layout {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+        }
+
+        .hole-wrap {
+            aspect-ratio: 1 / 1;
+            background-color: #5d4037;
+            border: 4px solid var(--outline);
+            border-radius: 50%;
+            position: relative;
+            overflow: hidden;
+            box-shadow: inset 0 10px 15px rgba(0,0,0,0.6);
+        }
+
+        .character-target {
+            width: 95%;
+            height: 100%;
+            position: absolute;
+            bottom: -100%;
+            left: 2.5%;
+            transition: bottom 0.12s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: pointer;
+            z-index: 5;
+        }
+
+        .character-target.up {
+            bottom: 0;
+        }
+
+        .character-target.hit {
+            transform: scale(0.9) translateY(20px);
+            filter: grayscale(0.2) brightness(0.9);
+        }
+
+        /* 點擊特效 */
+        .pop-text {
+            position: absolute;
+            background: #fff;
+            border: 3px solid var(--outline);
+            padding: 4px 12px;
+            font-weight: 900;
+            color: #d32f2f;
+            font-size: 1.5rem;
+            pointer-events: none;
+            z-index: 50;
+            border-radius: 10px;
+            animation: burst 0.45s ease-out forwards;
+        }
+
+        @keyframes burst {
+            0% { transform: scale(0) rotate(-15deg); opacity: 0; }
+            50% { transform: scale(1.4) rotate(10deg); opacity: 1; }
+            100% { transform: scale(1.1) translateY(-60px); opacity: 0; }
+        }
+
+        #btn-action {
+            background-color: var(--comic-orange);
+            color: white;
+            border: 5px solid var(--outline);
+            box-shadow: 8px 8px 0 var(--outline);
+            font-size: 2rem;
+            font-weight: 900;
+            padding: 12px 70px;
+            margin: 30px 0;
+            border-radius: 60px;
+            cursor: pointer;
+            transition: all 0.1s;
+        }
+
+        #btn-action:active {
+            box-shadow: 0 0 0 var(--outline);
+            transform: translate(8px, 8px);
+        }
+
+        #btn-action:disabled {
+            background-color: #cfd8dc;
+            box-shadow: none;
+            cursor: not-allowed;
+            transform: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="book-title-container">
+        <h1 class="book-title">搞笑對決</h1>
+        <div class="slogan-capsule">兄妹大戰！</div>
+    </div>
+
+    <div class="settings-card">
+        <div class="setting-field">
+            <label>戰鬥秒數</label>
+            <input type="number" id="cfg-time" value="30" min="5">
+        </div>
+        <div class="setting-field">
+            <label>跳出頻率</label>
+            <input type="number" id="cfg-speed" value="1.0" step="0.1" min="0.3">
+        </div>
+        <div class="setting-field">
+            <label>比例 (哥)</label>
+            <input type="number" id="cfg-ratio-b" value="1" min="0">
+        </div>
+        <div class="setting-field">
+            <label>比例 (妹)</label>
+            <input type="number" id="cfg-ratio-s" value="1" min="0">
+        </div>
+        <div class="flex items-end gap-3 ml-2">
+            <div class="stat-badge">得分: <span id="val-score" class="ml-1">0</span></div>
+            <div class="stat-badge">剩餘: <span id="val-timer" class="ml-1">30</span></div>
+        </div>
+    </div>
+
+    <div class="playground">
+        <div class="grid-layout" id="stage">
+            <!-- 9 個洞口由 JS 初始化 -->
+        </div>
+    </div>
+
+    <button id="btn-action">開始對決！</button>
+
+    <div id="results-modal" class="fixed inset-0 bg-sky-900/90 hidden flex items-center justify-center z-50 p-6">
+        <div class="bg-white border-8 border-black p-10 max-w-sm w-full text-center shadow-[15px_15px_0_#ffeb3b] rounded-2xl">
+            <h2 class="text-4xl font-black italic mb-2 text-red-600">對決結束！</h2>
+            <p id="results-text" class="text-xl font-bold mb-8">表現很精彩喔！</p>
+            <button onclick="hideResults()" class="bg-yellow-400 text-black border-4 border-black font-black py-4 px-10 hover:bg-yellow-500 w-full text-xl rounded-xl">
+                再來一次
+            </button>
+        </div>
+    </div>
+
+    <svg style="display:none">
+        <symbol id="char-brother" viewBox="0 0 100 100">
+            <rect x="20" y="70" width="60" height="30" fill="#4caf50" stroke="black" stroke-width="3"/>
+            <rect x="42" y="65" width="16" height="10" fill="#ffdbac" stroke="black" stroke-width="2"/>
+            <path d="M25 40 Q25 75 50 75 Q75 75 75 40 Z" fill="#ffdbac" stroke="black" stroke-width="3"/>
+            <path d="M22 42 Q22 15 50 15 Q78 15 78 42 L82 45 Q50 35 18 45 Z" fill="#333" stroke="black" stroke-width="3"/>
+            <line x1="38" y1="52" x2="48" y2="52" stroke="black" stroke-width="4" stroke-linecap="round"/>
+            <line x1="55" y1="52" x2="65" y2="52" stroke="black" stroke-width="4" stroke-linecap="round"/>
+            <path d="M42 62 Q50 70 60 62" fill="none" stroke="black" stroke-width="3" stroke-linecap="round"/>
+        </symbol>
+
+        <symbol id="char-sister" viewBox="0 0 100 100">
+            <rect x="20" y="70" width="60" height="30" fill="#ff9800" stroke="black" stroke-width="3"/>
+            <rect x="42" y="65" width="16" height="10" fill="#ffdbac" stroke="black" stroke-width="2"/>
+            <path d="M25 40 Q25 75 50 75 Q75 75 75 40 Z" fill="#ffdbac" stroke="black" stroke-width="3"/>
+            <path d="M18 40 Q18 15 50 15 Q82 15 82 40 L85 45 L15 45 Z" fill="#5d4037" stroke="black" stroke-width="2"/>
+            <circle cx="38" cy="52" r="8" fill="none" stroke="black" stroke-width="2.5"/>
+            <circle cx="62" cy="52" r="8" fill="none" stroke="black" stroke-width="2.5"/>
+            <line x1="46" y1="52" x2="54" y2="52" stroke="black" stroke-width="2"/>
+            <circle cx="38" cy="52" r="2" fill="black"/>
+            <circle cx="62" cy="52" r="2" fill="black"/>
+            <path d="M45 65 Q50 72 55 65" fill="none" stroke="black" stroke-width="2" stroke-linecap="round"/>
+            <circle cx="32" cy="62" r="3" fill="#ff8a80" opacity="0.6"/>
+            <circle cx="68" cy="62" r="3" fill="#ff8a80" opacity="0.6"/>
+        </symbol>
+    </svg>
+
+    <script>
+        const stage = document.getElementById('stage');
+        const scoreVal = document.getElementById('val-score');
+        const timerVal = document.getElementById('val-timer');
+        const actionBtn = document.getElementById('btn-action');
+        const configTime = document.getElementById('cfg-time');
+        const configSpeed = document.getElementById('cfg-speed');
+        const configRatioB = document.getElementById('cfg-ratio-b');
+        const configRatioS = document.getElementById('cfg-ratio-s');
+        const modal = document.getElementById('results-modal');
+        const modalText = document.getElementById('results-text');
+
+        let score = 0;
+        let timeLeft = 30;
+        let active = false;
+        let prevHole;
+        let mainTimer;
+        let spawnTimer;
+
+        function createStage() {
+            stage.innerHTML = '';
+            for (let i = 0; i < 9; i++) {
+                const wrap = document.createElement('div');
+                wrap.className = 'hole-wrap';
+                const target = document.createElement('div');
+                target.className = 'character-target';
+                
+                const processWhack = (e) => {
+                    if (e.type === 'touchstart') e.preventDefault();
+                    if (!target.classList.contains('up') || target.classList.contains('hit')) return;
+                    
+                    const points = 1;
+                    score += points;
+                    target.classList.add('hit');
+                    target.classList.remove('up');
+                    scoreVal.textContent = score;
+
+                    const rect = target.getBoundingClientRect();
+                    spawnEffect(rect.left + rect.width / 2, rect.top, `砰！`);
+                };
+
+                target.addEventListener('mousedown', processWhack);
+                target.addEventListener('touchstart', processWhack);
+
+                wrap.appendChild(target);
+                stage.appendChild(wrap);
+            }
+        }
+
+        function pickHole() {
+            const holes = document.querySelectorAll('.hole-wrap');
+            const hole = holes[Math.floor(Math.random() * holes.length)];
+            if (hole === prevHole) return pickHole();
+            prevHole = hole;
+            return hole;
+        }
+
+        function showTarget() {
+            if (!active) return;
+
+            const baseRate = parseFloat(configSpeed.value) * 1000;
+            const duration = baseRate * (0.65 + Math.random() * 0.35);
+            
+            const hole = pickHole();
+            const target = hole.querySelector('.character-target');
+
+            const bWeight = parseFloat(configRatioB.value) || 0;
+            const sWeight = parseFloat(configRatioS.value) || 0;
+            const totalWeight = bWeight + sWeight;
+            
+            let isSister;
+            if (totalWeight === 0) {
+                isSister = Math.random() > 0.5;
+            } else {
+                isSister = Math.random() < (sWeight / totalWeight);
+            }
+
+            target.dataset.type = isSister ? 'sister' : 'brother';
+            target.innerHTML = `
+                <svg width="100%" height="100%" pointer-events="none">
+                    <use href="#${isSister ? 'char-sister' : 'char-brother'}" />
+                </svg>
+            `;
+
+            target.classList.remove('hit');
+            target.classList.add('up');
+
+            spawnTimer = setTimeout(() => {
+                target.classList.remove('up');
+                if (active) showTarget();
+            }, duration);
+        }
+
+        function spawnEffect(x, y, txt) {
+            const effect = document.createElement('div');
+            effect.className = 'pop-text';
+            effect.textContent = txt;
+            effect.style.left = `${x - 25}px`;
+            effect.style.top = `${y - 10}px`;
+            document.body.appendChild(effect);
+            setTimeout(() => effect.remove(), 450);
+        }
+
+        function startRound() {
+            if (active) return;
+            score = 0;
+            timeLeft = parseInt(configTime.value) || 30;
+            active = true;
+            scoreVal.textContent = score;
+            timerVal.textContent = timeLeft;
+            actionBtn.disabled = true;
+            
+            configTime.disabled = true;
+            configSpeed.disabled = true;
+            configRatioB.disabled = true;
+            configRatioS.disabled = true;
+            
+            showTarget();
+            
+            mainTimer = setInterval(() => {
+                timeLeft--;
+                timerVal.textContent = timeLeft;
+                if (timeLeft <= 0) finishRound();
+            }, 1000);
+        }
+
+        function finishRound() {
+            active = false;
+            clearInterval(mainTimer);
+            clearTimeout(spawnTimer);
+            document.querySelectorAll('.character-target').forEach(t => t.classList.remove('up'));
+            
+            actionBtn.disabled = false;
+            configTime.disabled = false;
+            configSpeed.disabled = false;
+            configRatioB.disabled = false;
+            configRatioS.disabled = false;
+            
+            modalText.textContent = `對決結束！一共獲得了 ${score} 分！`;
+            modal.classList.remove('hidden');
+        }
+
+        function hideResults() {
+            modal.classList.add('hidden');
+        }
+
+        window.onload = () => {
+            createStage();
+            actionBtn.addEventListener('click', startRound);
+        };
+    </script>
+</body>
+</html>
