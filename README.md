@@ -76,6 +76,76 @@
     - **技術**: HTML5, SVG, Tailwind CSS, JavaScript
     - **語言**: 繁體中文
 
+### 11. 捷運月台：關門夾心大作戰 (MRT Door Dash)
+
+    - **文件**: `mrt_door_dash.html`
+    - **描述**: 時機節奏遊戲。門開時上車得分並累積 combo，門關或等待時衝撞會被夾扣命。可調門開時間、目標站數與人潮密度。
+    - **技術**: HTML5, Tailwind CSS, JavaScript
+    - **語言**: 繁體中文
+
+### 12. 電梯按鈕地獄 (Elevator Panel Panic)
+
+    - **文件**: `elevator_panel_panic.html`
+    - **描述**: 快速反應辨識。面板亮起樓層或功能鍵，在時限內點對應按鈕；假按鈕干擾、倒數壓力，撐過目標波次。
+    - **技術**: HTML5, Tailwind CSS, JavaScript
+    - **語言**: 繁體中文
+
+### 13. 雙人低頭族：搶同一顆充電器 (Charger Tug War)
+
+    - **文件**: `charger_tug_war.html`
+    - **描述**: 拔河式對抗。連點/長按拉 USB 線搶電量。支援單人 vs AI（AI 會偷懶滑手機）或雙人同機。
+    - **技術**: HTML5, Tailwind CSS, JavaScript
+    - **語言**: 繁體中文
+
+### 14. 手搖店特調：配方記憶 (Bubble Tea Memory)
+
+    - **文件**: `bubble_tea_memory.html`
+    - **描述**: 記憶序列出餐。先記住顧客訂單（茶底/糖度/冰量/配料），再依序點選出杯；連對有 combo 加分。
+    - **技術**: HTML5, Tailwind CSS, JavaScript
+    - **語言**: 繁體中文
+
+### 15. 夜市射氣球：蓄力瞄準版 (Night Market Balloon)
+
+    - **文件**: `night_market_balloon.html`
+    - **描述**: 角度與蓄力射擊。調整角度、按住蓄力發射飛鏢擊破氣球；金氣球高分、炸彈氣球範圍爆炸。可調發數、風偏與氣球移動。
+    - **技術**: HTML5 Canvas, Tailwind CSS, JavaScript
+    - **語言**: 繁體中文
+
+### 16. 沙堡加蓋：對抗漲潮 (Sandcastle Tide)
+
+    - **文件**: `sandcastle_tide.html`
+    - **描述**: 防守建造。堆沙加高沙堡、撿貝殼加固，撐過週期性漲潮沖刷與螃蟹搗亂。
+    - **技術**: HTML5, Tailwind CSS, JavaScript
+    - **語言**: 繁體中文
+
+### 17. 黑貓倉儲：包裹堆高機 (Black Cat Stack)
+
+    - **文件**: `black_cat_stack.html`
+    - **描述**: 堆疊平衡。左右移動中的包裹在時機按下堆疊，重疊區域成為新寬度；完美對齊加分，錯位過大倒塌。
+    - **技術**: HTML5 Canvas, Tailwind CSS, JavaScript
+    - **語言**: 繁體中文
+
+### 18. 廟口陣頭：鼓點跟打 (Temple Drum Beat)
+
+    - **文件**: `temple_drum_beat.html`
+    - **描述**: 四軌道節奏音遊。鼓點落下在判定線擊打，Perfect/Good/Miss 判定，氣勢條累積；可選 Web Audio 合成鼓聲。
+    - **技術**: HTML5, Tailwind CSS, JavaScript, Web Audio API
+    - **語言**: 繁體中文
+
+### 19. 小琉球潮間帶：寄居蟹換殼 (Liuqiu Hermit Shell)
+
+    - **文件**: `liuqiu_hermit_shell.html`
+    - **描述**: 網格路徑成長。操控寄居蟹移動、撿更大的殼升級防禦，躲避浪與海鳥，時限內抵達潮池終點。
+    - **技術**: HTML5, Tailwind CSS, JavaScript
+    - **語言**: 繁體中文
+
+### 20. 小吃攤老闆：一次一份不要改 (Night Stall Orders)
+
+    - **文件**: `night_stall_orders.html`
+    - **描述**: 多訂單時間管理。同時服務 1～3 位客人，依訂單組食材出餐；逾時離席扣評價，打烊結算營業額。
+    - **技術**: HTML5, Tailwind CSS, JavaScript
+    - **語言**: 繁體中文
+
 ## 🛠️ 技術棧
 
 - **前端框架**: HTML5, CSS3, JavaScript
@@ -86,18 +156,28 @@
 
 ```
 web-page-games/
-├── CatchCatGames.html        # 貓與鼠遊戲
-├── SusiRow.html              # 櫻花祭特急 - 迴轉壽司
-├── PickRedPocker.html        # 撿紅點 - 大正浪漫綺譚
-├── bondi-vb-toss.html         # 夏日邦迪海灘丟水球 - VB 版
-├── creeper_run.html           # MINECRAFT 苦力怕紅綠燈：爆炸版
-├── ender_dragon_sleep.html    # Minecraft 貓咪牧場 - 終界龍慢速降臨
-├── chiikawa_weeding_dash.html # 吉伊卡哇：小藍車拔草大衝刺
-├── fat_tail_gecko_race.html    # 肥尾大冒險：豹紋守宮的蟲蟲計時賽
-├── busan_jagalchi_deluxe.html  # 釜山大發：札嘎其金網大冒險
-├── funny_sibling_duel.html     # 普通兄妹的搞笑對決
-├── index.html                # 遊戲集合首頁
-└── README.md                 # 說明文件
+├── CatchCatGames.html           # 貓與鼠遊戲
+├── SusiRow.html                 # 櫻花祭特急 - 迴轉壽司
+├── PickRedPocker.html           # 撿紅點 - 大正浪漫綺譚
+├── bondi-vb-toss.html           # 夏日邦迪海灘丟水球 - VB 版
+├── creeper_run.html             # MINECRAFT 苦力怕紅綠燈：爆炸版
+├── ender_dragon_sleep.html      # Minecraft 貓咪牧場 - 終界龍慢速降臨
+├── chiikawa_weeding_dash.html   # 吉伊卡哇：小藍車拔草大衝刺
+├── fat_tail_gecko_race.html     # 肥尾大冒險：豹紋守宮的蟲蟲計時賽
+├── busan_jagalchi_deluxe.html   # 釜山大發：札嘎其金網大冒險
+├── funny_sibling_duel.html      # 普通兄妹的搞笑對決
+├── mrt_door_dash.html           # 捷運月台：關門夾心大作戰
+├── elevator_panel_panic.html    # 電梯按鈕地獄
+├── charger_tug_war.html         # 搶同一顆充電器
+├── bubble_tea_memory.html       # 手搖店特調：配方記憶
+├── night_market_balloon.html    # 夜市射氣球：蓄力瞄準版
+├── sandcastle_tide.html         # 沙堡加蓋：對抗漲潮
+├── black_cat_stack.html         # 黑貓倉儲：包裹堆高機
+├── temple_drum_beat.html        # 廟口陣頭：鼓點跟打
+├── liuqiu_hermit_shell.html     # 小琉球潮間帶：寄居蟹換殼
+├── night_stall_orders.html      # 小吃攤老闆：一次一份不要改
+├── index.html                   # 遊戲集合首頁
+└── README.md                    # 說明文件
 ```
 
 ## 🚀 快速開始
@@ -128,4 +208,4 @@ DunkLiao
 
 ---
 
-**最後更新**: 2026年2月21日
+**最後更新**: 2026年7月11日

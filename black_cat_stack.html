@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>黑貓倉儲：包裹堆高機</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
+  <style>
+    * { font-family: 'Noto Sans TC', sans-serif; box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh; color: #f8fafc;
+      background: linear-gradient(180deg, #1e293b 0%, #0f172a 50%, #334155 100%);
+      touch-action: manipulation;
+    }
+    .panel {
+      background: rgba(15, 23, 42, 0.95);
+      border: 2px solid #fbbf24;
+      border-radius: 16px;
+      box-shadow: 0 0 20px rgba(251, 191, 36, 0.2);
+    }
+    .btn-main {
+      background: linear-gradient(135deg, #fbbf24, #f59e0b);
+      border: 2px solid #fef3c7; color: #1c1917; font-weight: 900;
+      border-radius: 12px; padding: 12px 20px; width: 100%; cursor: pointer;
+    }
+    .btn-secondary {
+      background: #334155; border: 2px solid #64748b; color: #e2e8f0;
+      border-radius: 10px; padding: 10px; font-weight: 700; width: 100%; cursor: pointer;
+    }
+    canvas {
+      width: 100%; display: block; border-radius: 12px;
+      border: 2px solid #64748b; background: #0f172a; touch-action: none;
+    }
+    input[type=range] { width: 100%; accent-color: #fbbf24; }
+  </style>
+</head>
+<body class="flex flex-col items-center p-4 pb-10">
+  <div class="w-full max-w-md">
+    <div class="text-center mb-4">
+      <div class="text-4xl mb-1">📦🐈‍⬛</div>
+      <h1 class="text-2xl font-black text-amber-300">黑貓倉儲：包裹堆高機</h1>
+      <p class="text-sm text-slate-400 mt-1">對齊堆疊 · 完美加分 · 歪了就倒</p>
+    </div>
+
+    <div id="setup" class="panel p-5 mb-4">
+      <h2 class="font-bold text-amber-200 mb-3">設定</h2>
+      <label class="block text-sm mb-1">下落速度：<span id="spdVal">中</span></label>
+      <input type="range" id="speed" min="0" max="2" step="1" value="1">
+      <label class="block text-sm mt-3 mb-1">寬度隨機：<span id="varVal">中</span></label>
+      <input type="range" id="variance" min="0" max="2" step="1" value="1">
+      <label class="block text-sm mt-3 mb-1">目標層數：<span id="goalVal">12</span></label>
+      <input type="range" id="goal" min="6" max="20" step="1" value="12">
+      <p class="text-xs text-slate-400 mt-3">最高分：<span id="hsSetup">0</span></p>
+      <button class="btn-main mt-4" id="startBtn">開工！</button>
+      <a href="index.html" class="block text-center text-sm text-slate-400 mt-3 underline">← 回遊戲間</a>
+    </div>
+
+    <div id="game" class="hidden">
+      <div class="flex justify-between text-sm font-bold mb-2">
+        <span>層 <span id="layers">0</span>/<span id="maxLayers">12</span></span>
+        <span>分 <span id="score">0</span></span>
+        <span id="perfectMsg" class="text-amber-300"></span>
+      </div>
+      <div class="panel p-2 mb-3">
+        <canvas id="cv" width="360" height="480"></canvas>
+      </div>
+      <button class="btn-main mb-2" id="dropBtn">放下包裹！</button>
+      <p class="text-center text-xs text-slate-400 mb-2" id="statusMsg">左右移動中 · 時機到就放下</p>
+      <button class="btn-secondary" id="quitBtn">下班</button>
+    </div>
+
+    <div id="result" class="panel p-6 text-center hidden">
+      <div class="text-5xl mb-2" id="resultEmoji">📦</div>
+      <h2 class="text-xl font-black text-amber-300 mb-2" id="resultTitle">結束</h2>
+      <p class="text-lg mb-1">分數：<span id="finalScore" class="font-black text-yellow-300">0</span></p>
+      <p class="text-sm text-slate-400 mb-4">最高分：<span id="finalHS">0</span></p>
+      <button class="btn-main mb-2" id="againBtn">再堆一次</button>
+      <a href="index.html" class="block text-sm text-slate-400 underline">← 回遊戲間</a>
+    </div>
+  </div>
+
+  <script>
+    const HS_KEY = 'black_cat_stack_hs';
+    const $ = id => document.getElementById(id);
+    const labels = ['慢', '中', '快'];
+    const cv = $('cv'), ctx = cv.getContext('2d');
+
+    let speedLv = 1, varLv = 1, maxLayers = 12;
+    let score = 0, stack = [], current = null, dir = 1, playing = false, raf = null;
+    let baseY = 0;
+
+    function loadHS() { return parseInt(localStorage.getItem(HS_KEY) || '0', 10); }
+    function saveHS(s) {
+      const hs = loadHS();
+      if (s > hs) { localStorage.setItem(HS_KEY, String(s)); return s; }
+      return hs;
+    }
+
+    $('speed').oninput = e => $('spdVal').textContent = labels[+e.target.value];
+    $('variance').oninput = e => $('varVal').textContent = labels[+e.target.value];
+    $('goal').oninput = e => $('goalVal').textContent = e.target.value;
+    $('hsSetup').textContent = loadHS();
+
+    function randW() {
+      const base = 120;
+      const spread = [0, 25, 45][varLv];
+      return Math.max(40, base - Math.random() * spread - stack.length * 2);
+    }
+
+    function spawnCurrent() {
+      const prev = stack[stack.length - 1];
+      // moving block starts at previous width (overlap will trim on place)
+      let width = prev ? prev.w : 140;
+      if (varLv > 0 && prev) {
+        const jitter = [0, 8, 16][varLv];
+        width = Math.max(36, width + (Math.random() * jitter * 2 - jitter));
+      }
+      current = {
+        x: 30,
+        y: 40,
+        w: width,
+        h: 28,
+        color: stack.length % 2 === 0 ? '#f59e0b' : '#eab308',
+        falling: false
+      };
+      dir = Math.random() < 0.5 ? 1 : -1;
+      if (dir < 0) current.x = cv.width - 30 - current.w;
+    }
+
+    function draw() {
+      const w = cv.width, h = cv.height;
+      ctx.clearRect(0, 0, w, h);
+      // warehouse bg
+      ctx.fillStyle = '#1e293b';
+      ctx.fillRect(0, 0, w, h);
+      // shelves lines
+      ctx.strokeStyle = 'rgba(100,116,139,0.3)';
+      for (let i = 0; i < 8; i++) {
+        ctx.beginPath();
+        ctx.moveTo(0, 60 + i * 50);
+        ctx.lineTo(w, 60 + i * 50);
+        ctx.stroke();
+      }
+      // floor
+      ctx.fillStyle = '#334155';
+      ctx.fillRect(0, h - 36, w, 36);
+      ctx.fillStyle = '#475569';
+      ctx.fillRect(0, h - 40, w, 6);
+      // cat silhouette
+      ctx.font = '28px sans-serif';
+      ctx.fillText('🐈‍⬛', 12, h - 12);
+
+      // camera offset so tower stays visible
+      const towerH = stack.length * 28;
+      const offset = Math.max(0, towerH - 280);
+
+      stack.forEach((b, i) => {
+        const y = h - 40 - (i + 1) * b.h + offset;
+        drawBox(b.x, y, b.w, b.h, b.color, b.perfect);
+      });
+
+      if (current) {
+        const y = current.falling ? current.y : 50;
+        drawBox(current.x, y, current.w, current.h, current.color, false);
+      }
+    }
+
+    function drawBox(x, y, bw, bh, color, perfect) {
+      ctx.fillStyle = color;
+      ctx.fillRect(x, y, bw, bh);
+      ctx.strokeStyle = '#78350f';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(x, y, bw, bh);
+      // tape
+      ctx.fillStyle = 'rgba(120,53,15,0.35)';
+      ctx.fillRect(x, y + bh / 2 - 3, bw, 6);
+      ctx.fillRect(x + bw / 2 - 3, y, 6, bh);
+      if (perfect) {
+        ctx.fillStyle = '#fef08a';
+        ctx.font = 'bold 10px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('穩', x + bw / 2, y + bh / 2 + 3);
+        ctx.textAlign = 'left';
+      }
+    }
+
+    function loop() {
+      if (!playing) return;
+      if (current && !current.falling) {
+        const spd = [2.2, 3.6, 5.2][speedLv];
+        current.x += dir * spd;
+        if (current.x <= 10) { current.x = 10; dir = 1; }
+        if (current.x + current.w >= cv.width - 10) {
+          current.x = cv.width - 10 - current.w;
+          dir = -1;
+        }
+      }
+      if (current && current.falling) {
+        current.y += 12;
+        const targetY = cv.height - 40 - (stack.length + 1) * current.h + Math.max(0, stack.length * 28 - 280);
+        // simpler: just check placement when past certain point
+        if (current.y >= cv.height - 40 - (stack.length + 1) * 28) {
+          placeBox();
+        }
+      }
+      draw();
+      raf = requestAnimationFrame(loop);
+    }
+
+    function placeBox() {
+      const prev = stack[stack.length - 1];
+      let nx = current.x, nw = current.w;
+      let perfect = false;
+
+      if (prev) {
+        const left = Math.max(nx, prev.x);
+        const right = Math.min(nx + nw, prev.x + prev.w);
+        const overlap = right - left;
+        if (overlap <= 8) {
+          // fall off
+          current = null;
+          endGame(false);
+          return;
+        }
+        nx = left;
+        nw = overlap;
+        perfect = Math.abs(current.x - prev.x) < 6 && Math.abs(current.w - prev.w) < 6;
+      } else {
+        perfect = true;
+      }
+
+      stack.push({ x: nx, w: nw, h: 28, color: current.color, perfect });
+      const gain = perfect ? 25 : 10 + Math.floor(nw / 10);
+      score += gain;
+      $('perfectMsg').textContent = perfect ? '完美對齊！' : '';
+      $('layers').textContent = stack.length;
+      $('score').textContent = score;
+      current = null;
+
+      if (stack.length >= maxLayers) {
+        score += 50;
+        $('score').textContent = score;
+        endGame(true);
+        return;
+      }
+      spawnCurrent();
+    }
+
+    function drop() {
+      if (!playing || !current || current.falling) return;
+      current.falling = true;
+      // immediate place for snappier feel
+      placeBox();
+    }
+
+    function startGame() {
+      speedLv = parseInt($('speed').value, 10);
+      varLv = parseInt($('variance').value, 10);
+      maxLayers = parseInt($('goal').value, 10);
+      score = 0; stack = []; playing = true;
+      $('maxLayers').textContent = maxLayers;
+      $('layers').textContent = '0';
+      $('score').textContent = '0';
+      $('perfectMsg').textContent = '';
+      $('setup').classList.add('hidden');
+      $('result').classList.add('hidden');
+      $('game').classList.remove('hidden');
+      spawnCurrent();
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(loop);
+    }
+
+    function endGame(win) {
+      playing = false;
+      cancelAnimationFrame(raf);
+      const hs = saveHS(score);
+      $('game').classList.add('hidden');
+      $('result').classList.remove('hidden');
+      $('resultEmoji').textContent = win ? '🏆' : '💥';
+      $('resultTitle').textContent = win ? '出貨達標！' : '塔倒了…';
+      $('finalScore').textContent = score;
+      $('finalHS').textContent = hs;
+      $('hsSetup').textContent = hs;
+    }
+
+    function quit() {
+      playing = false;
+      cancelAnimationFrame(raf);
+      $('game').classList.add('hidden');
+      $('setup').classList.remove('hidden');
+    }
+
+    $('startBtn').onclick = startGame;
+    $('againBtn').onclick = startGame;
+    $('quitBtn').onclick = quit;
+    $('dropBtn').onclick = drop;
+    cv.addEventListener('pointerdown', e => { e.preventDefault(); drop(); });
+  </script>
+</body>
+</html>

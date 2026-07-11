@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>雙人低頭族：搶同一顆充電器</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
+  <style>
+    * { font-family: 'Noto Sans TC', sans-serif; box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh; color: #f1f5f9;
+      background: linear-gradient(180deg, #312e81 0%, #1e1b4b 50%, #0f172a 100%);
+      touch-action: manipulation;
+      user-select: none;
+    }
+    .panel {
+      background: rgba(30, 27, 75, 0.95);
+      border: 2px solid #a78bfa;
+      border-radius: 16px;
+      box-shadow: 0 0 28px rgba(167, 139, 250, 0.3);
+    }
+    .btn-main {
+      background: linear-gradient(135deg, #a78bfa, #ec4899);
+      border: 2px solid #e9d5ff; color: white; font-weight: 900;
+      border-radius: 12px; padding: 12px 20px; width: 100%; cursor: pointer;
+    }
+    .btn-secondary {
+      background: #312e81; border: 2px solid #6366f1; color: #e0e7ff;
+      border-radius: 10px; padding: 10px; font-weight: 700; width: 100%; cursor: pointer;
+    }
+    .tug-zone {
+      min-height: 120px; border-radius: 16px; border: 3px solid;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      font-weight: 900; cursor: pointer; transition: transform 0.05s, filter 0.1s;
+    }
+    .tug-zone:active { transform: scale(0.97); filter: brightness(1.15); }
+    .p1-zone {
+      background: linear-gradient(180deg, #3b82f6, #1d4ed8);
+      border-color: #93c5fd;
+    }
+    .p2-zone {
+      background: linear-gradient(180deg, #f43f5e, #be123c);
+      border-color: #fda4af;
+    }
+    .cable-track {
+      height: 28px; background: #1e293b; border-radius: 14px;
+      border: 2px solid #475569; position: relative; overflow: hidden;
+    }
+    .cable-knob {
+      position: absolute; top: 50%; transform: translate(-50%, -50%);
+      width: 36px; height: 36px; border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, #fef08a, #eab308);
+      border: 3px solid #713f12;
+      box-shadow: 0 0 12px #facc15;
+      transition: left 0.05s linear;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.7rem;
+    }
+    .bat {
+      height: 14px; border-radius: 4px; background: #334155; overflow: hidden;
+      border: 1px solid #64748b;
+    }
+    .bat-fill { height: 100%; transition: width 0.1s; }
+    input[type=range] { width: 100%; accent-color: #a78bfa; }
+  </style>
+</head>
+<body class="flex flex-col items-center p-4 pb-10">
+  <div class="w-full max-w-md">
+    <div class="text-center mb-4">
+      <div class="text-4xl mb-1">🔌📱</div>
+      <h1 class="text-2xl font-black text-violet-300">搶同一顆充電器</h1>
+      <p class="text-sm text-slate-400 mt-1">連點拉線 · 搶電量 · 別被拔光</p>
+    </div>
+
+    <div id="setup" class="panel p-5 mb-4">
+      <h2 class="font-bold text-violet-200 mb-3">設定</h2>
+      <label class="block text-sm mb-1">模式</label>
+      <select id="mode" class="w-full p-2 rounded-lg bg-indigo-950 border border-violet-400 text-white mb-3">
+        <option value="ai">單人 vs AI</option>
+        <option value="pvp">雙人同機</option>
+      </select>
+      <label class="block text-sm mb-1">對戰秒數：<span id="durVal">30</span></label>
+      <input type="range" id="duration" min="15" max="60" step="5" value="30">
+      <label class="block text-sm mt-3 mb-1">AI 強度：<span id="aiVal">中</span></label>
+      <input type="range" id="aiLevel" min="0" max="2" step="1" value="1">
+      <p class="text-xs text-slate-400 mt-3">勝場紀錄：你 <span id="winsYou">0</span> · AI/對手 <span id="winsOpp">0</span></p>
+      <button class="btn-main mt-4" id="startBtn">開搶！</button>
+      <a href="index.html" class="block text-center text-sm text-slate-400 mt-3 underline">← 回遊戲間</a>
+    </div>
+
+    <div id="game" class="hidden">
+      <div class="flex justify-between text-sm mb-2">
+        <span class="font-bold text-blue-300">藍方 ⚡<span id="bat1">50</span>%</span>
+        <span class="font-bold text-yellow-300"><span id="timeLeft">30</span>s</span>
+        <span class="font-bold text-rose-300">紅方 ⚡<span id="bat2">50</span>%</span>
+      </div>
+      <div class="bat mb-1"><div class="bat-fill bg-blue-400" id="batBar1" style="width:50%"></div></div>
+      <div class="cable-track my-3">
+        <div class="cable-knob" id="knob" style="left:50%">🔌</div>
+      </div>
+      <div class="bat mb-3"><div class="bat-fill bg-rose-400 ml-auto" id="batBar2" style="width:50%"></div></div>
+
+      <div class="tug-zone p2-zone mb-3" id="zone2">
+        <div class="text-3xl">😤</div>
+        <div id="label2">紅方 · 狂點這裡</div>
+        <div class="text-xs opacity-80">或按 L / →</div>
+      </div>
+      <p class="text-center text-sm text-violet-200 mb-3" id="statusMsg">搶線中！</p>
+      <div class="tug-zone p1-zone mb-3" id="zone1">
+        <div class="text-3xl">😎</div>
+        <div id="label1">藍方 · 狂點這裡</div>
+        <div class="text-xs opacity-80">或按 A / ←</div>
+      </div>
+      <button class="btn-secondary" id="quitBtn">放棄</button>
+    </div>
+
+    <div id="result" class="panel p-6 text-center hidden">
+      <div class="text-5xl mb-2" id="resultEmoji">🏆</div>
+      <h2 class="text-xl font-black text-violet-300 mb-2" id="resultTitle">結束</h2>
+      <p class="text-sm text-slate-400 mb-4" id="resultSub"></p>
+      <button class="btn-main mb-2" id="againBtn">再搶一次</button>
+      <a href="index.html" class="block text-sm text-slate-400 underline">← 回遊戲間</a>
+    </div>
+  </div>
+
+  <script>
+    const WIN_KEY = 'charger_tug_wins';
+    const $ = id => document.getElementById(id);
+    const aiLabels = ['弱', '中', '強'];
+
+    let playing = false, mode = 'ai', duration = 30, aiLevel = 1;
+    let tug = 0.5; // 0 = p2 full, 1 = p1 full
+    let bat1 = 50, bat2 = 50;
+    let timeLeft = 30, lastTs = 0, raf = null;
+    let p1Pulse = 0, p2Pulse = 0;
+    let aiLazyUntil = 0;
+
+    function loadWins() {
+      try { return JSON.parse(localStorage.getItem(WIN_KEY) || '{"you":0,"opp":0}'); }
+      catch { return { you: 0, opp: 0 }; }
+    }
+    function saveWins(w) { localStorage.setItem(WIN_KEY, JSON.stringify(w)); }
+
+    function refreshWinsUI() {
+      const w = loadWins();
+      $('winsYou').textContent = w.you;
+      $('winsOpp').textContent = w.opp;
+    }
+
+    $('duration').oninput = e => $('durVal').textContent = e.target.value;
+    $('aiLevel').oninput = e => $('aiVal').textContent = aiLabels[+e.target.value];
+    refreshWinsUI();
+
+    function pull(side) {
+      if (!playing) return;
+      if (side === 1) p1Pulse += 1;
+      else p2Pulse += 1;
+    }
+
+    function startGame() {
+      mode = $('mode').value;
+      duration = parseInt($('duration').value, 10);
+      aiLevel = parseInt($('aiLevel').value, 10);
+      tug = 0.5; bat1 = 50; bat2 = 50;
+      timeLeft = duration; p1Pulse = 0; p2Pulse = 0;
+      playing = true; lastTs = 0; aiLazyUntil = 0;
+      $('label2').textContent = mode === 'ai' ? 'AI · 正在偷懶滑手機' : '紅方 · 狂點這裡';
+      $('setup').classList.add('hidden');
+      $('result').classList.add('hidden');
+      $('game').classList.remove('hidden');
+      updateUI();
+      raf = requestAnimationFrame(loop);
+    }
+
+    function loop(ts) {
+      if (!playing) return;
+      if (!lastTs) lastTs = ts;
+      const dt = Math.min(0.05, (ts - lastTs) / 1000);
+      lastTs = ts;
+      timeLeft -= dt;
+
+      // Apply pulses
+      const pullStr = 0.035;
+      tug += p1Pulse * pullStr - p2Pulse * pullStr;
+      p1Pulse = 0; p2Pulse = 0;
+
+      // AI
+      if (mode === 'ai') {
+        if (ts > aiLazyUntil) {
+          const rates = [2.5, 4.5, 7];
+          const lazyChance = [0.35, 0.2, 0.08][aiLevel];
+          if (Math.random() < lazyChance) {
+            aiLazyUntil = ts + 400 + Math.random() * 800;
+            $('statusMsg').textContent = 'AI 滑手機偷懶中…';
+          } else {
+            tug -= rates[aiLevel] * pullStr * dt * 8;
+            $('statusMsg').textContent = 'AI 在搶線！';
+          }
+        }
+      } else {
+        $('statusMsg').textContent = '雙人對決中！';
+      }
+
+      tug = Math.max(0, Math.min(1, tug));
+
+      // Charge based on cable ownership
+      const chargeRate = 18;
+      if (tug > 0.55) {
+        bat1 = Math.min(100, bat1 + chargeRate * dt * (tug - 0.5) * 2);
+        bat2 = Math.max(0, bat2 - chargeRate * dt * 0.4);
+      } else if (tug < 0.45) {
+        bat2 = Math.min(100, bat2 + chargeRate * dt * (0.5 - tug) * 2);
+        bat1 = Math.max(0, bat1 - chargeRate * dt * 0.4);
+      }
+
+      updateUI();
+
+      if (bat1 >= 100 || bat2 <= 0) return endGame(1);
+      if (bat2 >= 100 || bat1 <= 0) return endGame(2);
+      if (timeLeft <= 0) {
+        if (bat1 === bat2) return endGame(tug >= 0.5 ? 1 : 2);
+        return endGame(bat1 > bat2 ? 1 : 2);
+      }
+      raf = requestAnimationFrame(loop);
+    }
+
+    function updateUI() {
+      $('bat1').textContent = Math.round(bat1);
+      $('bat2').textContent = Math.round(bat2);
+      $('batBar1').style.width = bat1 + '%';
+      $('batBar2').style.width = bat2 + '%';
+      $('knob').style.left = (tug * 100) + '%';
+      $('timeLeft').textContent = Math.max(0, Math.ceil(timeLeft));
+    }
+
+    function endGame(winner) {
+      playing = false;
+      cancelAnimationFrame(raf);
+      const w = loadWins();
+      if (winner === 1) w.you++; else w.opp++;
+      saveWins(w);
+      refreshWinsUI();
+      $('game').classList.add('hidden');
+      $('result').classList.remove('hidden');
+      const youWin = winner === 1;
+      $('resultEmoji').textContent = youWin ? '🏆' : '🔋';
+      $('resultTitle').textContent = youWin
+        ? (mode === 'ai' ? '你搶到充電器！' : '藍方勝利！')
+        : (mode === 'ai' ? 'AI 搶走了…' : '紅方勝利！');
+      $('resultSub').textContent = `藍 ${Math.round(bat1)}% · 紅 ${Math.round(bat2)}%`;
+    }
+
+    function quit() {
+      playing = false;
+      cancelAnimationFrame(raf);
+      $('game').classList.add('hidden');
+      $('setup').classList.remove('hidden');
+    }
+
+    $('zone1').addEventListener('pointerdown', e => { e.preventDefault(); pull(1); });
+    $('zone2').addEventListener('pointerdown', e => { e.preventDefault(); pull(2); });
+    // Rapid fire on hold
+    let hold1 = null, hold2 = null;
+    $('zone1').addEventListener('pointerdown', () => {
+      clearInterval(hold1);
+      hold1 = setInterval(() => pull(1), 80);
+    });
+    $('zone1').addEventListener('pointerup', () => clearInterval(hold1));
+    $('zone1').addEventListener('pointerleave', () => clearInterval(hold1));
+    $('zone2').addEventListener('pointerdown', () => {
+      clearInterval(hold2);
+      hold2 = setInterval(() => pull(2), 80);
+    });
+    $('zone2').addEventListener('pointerup', () => clearInterval(hold2));
+    $('zone2').addEventListener('pointerleave', () => clearInterval(hold2));
+
+    window.addEventListener('keydown', e => {
+      if (!playing) return;
+      if (e.key === 'a' || e.key === 'A' || e.key === 'ArrowLeft') pull(1);
+      if (e.key === 'l' || e.key === 'L' || e.key === 'ArrowRight') pull(2);
+    });
+
+    $('startBtn').onclick = startGame;
+    $('againBtn').onclick = startGame;
+    $('quitBtn').onclick = quit;
+  </script>
+</body>
+</html>

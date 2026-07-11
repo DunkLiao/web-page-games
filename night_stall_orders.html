@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>小吃攤老闆：一次一份不要改</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
+  <style>
+    * { font-family: 'Noto Sans TC', sans-serif; box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh; color: #1c1917;
+      background: linear-gradient(160deg, #44403c 0%, #78716c 40%, #a8a29e 100%);
+      touch-action: manipulation;
+    }
+    .panel {
+      background: #fef3c7;
+      border: 3px solid #78350f;
+      border-radius: 16px;
+      box-shadow: 0 6px 0 #451a03;
+    }
+    .btn-main {
+      background: linear-gradient(135deg, #f59e0b, #ea580c);
+      border: 3px solid #431407; color: #431407; font-weight: 900;
+      border-radius: 12px; padding: 12px 20px; width: 100%; cursor: pointer;
+      box-shadow: 0 4px 0 #431407;
+    }
+    .btn-secondary {
+      background: #e7e5e4; border: 2px solid #57534e; color: #1c1917;
+      border-radius: 10px; padding: 10px; font-weight: 700; width: 100%; cursor: pointer;
+    }
+    .customer {
+      background: #fff; border: 3px solid #a8a29e; border-radius: 12px;
+      padding: 10px; position: relative;
+    }
+    .customer.urgent { border-color: #ef4444; animation: urg 0.5s infinite; }
+    @keyframes urg {
+      0%,100% { box-shadow: 0 0 0 rgba(239,68,68,0); }
+      50% { box-shadow: 0 0 12px rgba(239,68,68,0.5); }
+    }
+    .timer-bar { height: 8px; background: #e7e5e4; border-radius: 4px; overflow: hidden; margin-top: 6px; }
+    .timer-fill { height: 100%; background: #22c55e; transition: width 0.1s linear; }
+    .ing-btn {
+      border: 2px solid #78350f; border-radius: 10px; padding: 10px 6px;
+      background: #fffbeb; font-weight: 700; font-size: 0.8rem; cursor: pointer;
+      text-align: center; box-shadow: 0 2px 0 #78350f;
+    }
+    .ing-btn:active { transform: translateY(1px); box-shadow: 0 1px 0 #78350f; }
+    .ing-btn.on { background: #fde68a; border-color: #d97706; }
+    .plate {
+      min-height: 48px; background: #fff; border: 2px dashed #a8a29e;
+      border-radius: 12px; padding: 8px; display: flex; flex-wrap: wrap; gap: 4px;
+      align-items: center;
+    }
+    .tag {
+      background: #fef3c7; border: 1px solid #d97706; border-radius: 999px;
+      padding: 2px 8px; font-size: 0.75rem; font-weight: 700;
+    }
+    input[type=range] { width: 100%; accent-color: #ea580c; }
+  </style>
+</head>
+<body class="flex flex-col items-center p-4 pb-10">
+  <div class="w-full max-w-md">
+    <div class="text-center mb-4">
+      <div class="text-4xl mb-1">🍳🍢</div>
+      <h1 class="text-2xl font-black text-amber-100">小吃攤老闆</h1>
+      <p class="text-sm text-stone-300 mt-1">一次一份不要改 · 看單出餐 · 別讓客人走</p>
+    </div>
+
+    <div id="setup" class="panel p-5 mb-4">
+      <h2 class="font-bold text-amber-900 mb-3">設定</h2>
+      <label class="block text-sm mb-1">同時客人：<span id="custVal">2</span></label>
+      <input type="range" id="maxCust" min="1" max="3" step="1" value="2">
+      <label class="block text-sm mt-3 mb-1">出餐時限：<span id="limitVal">12</span> 秒</label>
+      <input type="range" id="orderLimit" min="8" max="20" step="1" value="12">
+      <label class="block text-sm mt-3 mb-1">菜單複雜度：<span id="menuVal">中</span></label>
+      <input type="range" id="menuLv" min="0" max="2" step="1" value="1">
+      <label class="block text-sm mt-3 mb-1">營業時間：<span id="durVal">60</span> 秒</label>
+      <input type="range" id="duration" min="40" max="120" step="10" value="60">
+      <p class="text-xs text-amber-900/60 mt-3">最高分：<span id="hsSetup">0</span></p>
+      <button class="btn-main mt-4" id="startBtn">開爐！</button>
+      <a href="index.html" class="block text-center text-sm text-amber-900/60 mt-3 underline">← 回遊戲間</a>
+    </div>
+
+    <div id="game" class="hidden">
+      <div class="flex justify-between text-sm font-bold mb-2 text-amber-50">
+        <span>⏱ <span id="time">60</span>s</span>
+        <span>💰 <span id="score">0</span></span>
+        <span>⭐ <span id="rating">5.0</span></span>
+        <span>單 <span id="served">0</span></span>
+      </div>
+      <div class="panel p-3 mb-3">
+        <div class="space-y-2 mb-3" id="customers"></div>
+        <div class="text-xs font-bold text-amber-900 mb-1">目前組餐</div>
+        <div class="plate mb-2" id="plate"><span class="text-stone-400 text-sm">點下方食材…</span></div>
+        <div class="grid grid-cols-4 gap-2 mb-2" id="ings"></div>
+        <div class="grid grid-cols-2 gap-2">
+          <button class="btn-secondary" id="clearBtn">清空</button>
+          <button class="btn-main" id="serveBtn" style="padding:10px">出餐！</button>
+        </div>
+        <p class="text-center text-sm font-bold mt-2 h-5 text-amber-900" id="statusMsg"></p>
+      </div>
+      <button class="btn-secondary" id="quitBtn" style="background:#44403c;color:#fafaf9;border-color:#a8a29e">收攤</button>
+    </div>
+
+    <div id="result" class="panel p-6 text-center hidden">
+      <div class="text-5xl mb-2">🍳</div>
+      <h2 class="text-xl font-black text-amber-900 mb-2" id="resultTitle">打烊</h2>
+      <p class="text-lg mb-1">營業額：<span id="finalScore" class="font-black text-orange-600">0</span></p>
+      <p class="text-sm mb-1">出餐 <span id="finalServed">0</span> · 評價 <span id="finalRating">5.0</span></p>
+      <p class="text-sm text-amber-900/60 mb-4">最高分：<span id="finalHS">0</span></p>
+      <button class="btn-main mb-2" id="againBtn">再開一攤</button>
+      <a href="index.html" class="block text-sm text-amber-900/60 underline">← 回遊戲間</a>
+    </div>
+  </div>
+
+  <script>
+    const HS_KEY = 'night_stall_orders_hs';
+    const $ = id => document.getElementById(id);
+    const menuLabels = ['簡', '中', '繁'];
+
+    const MENU = [
+      { id: 'oyster', name: '蚵仔煎', emoji: '🍳', ings: ['蛋', '蚵仔', '粉漿'], price: 40 },
+      { id: 'sausage', name: '大腸包小腸', emoji: '🌭', ings: ['大腸', '香腸', '酸菜'], price: 35 },
+      { id: 'tofu', name: '臭豆腐', emoji: '🧊', ings: ['豆腐', '泡菜', '醬'], price: 30 },
+      { id: 'drink', name: '青草茶', emoji: '🍵', ings: ['青草', '冰'], price: 20 },
+      { id: 'squid', name: '烤魷魚', emoji: '🦑', ings: ['魷魚', '醬'], price: 45 },
+      { id: 'pepper', name: '胡椒餅', emoji: '🥟', ings: ['麵皮', '肉餡', '胡椒'], price: 35 }
+    ];
+
+    const ALL_INGS = ['蛋', '蚵仔', '粉漿', '大腸', '香腸', '酸菜', '豆腐', '泡菜', '醬', '青草', '冰', '魷魚', '麵皮', '肉餡', '胡椒'];
+
+    let maxCust = 2, orderLimit = 12, menuLv = 1, duration = 60;
+    let score = 0, rating = 5, served = 0, timeLeft = 60;
+    let customers = [], plate = [], playing = false;
+    let tickTimer = null, spawnTimer = null;
+
+    function loadHS() { return parseInt(localStorage.getItem(HS_KEY) || '0', 10); }
+    function saveHS(s) {
+      const hs = loadHS();
+      if (s > hs) { localStorage.setItem(HS_KEY, String(s)); return s; }
+      return hs;
+    }
+
+    $('maxCust').oninput = e => $('custVal').textContent = e.target.value;
+    $('orderLimit').oninput = e => $('limitVal').textContent = e.target.value;
+    $('menuLv').oninput = e => $('menuVal').textContent = menuLabels[+e.target.value];
+    $('duration').oninput = e => $('durVal').textContent = e.target.value;
+    $('hsSetup').textContent = loadHS();
+
+    function availableMenu() {
+      const n = [3, 4, 6][menuLv];
+      return MENU.slice(0, n);
+    }
+
+    function spawnCustomer() {
+      if (!playing || customers.length >= maxCust) return;
+      const menu = availableMenu();
+      const dish = menu[Math.floor(Math.random() * menu.length)];
+      customers.push({
+        id: Date.now() + Math.random(),
+        dish,
+        time: orderLimit,
+        max: orderLimit,
+        faces: ['😐', '😊', '🤤', '😎']
+      });
+      renderCustomers();
+    }
+
+    function renderCustomers() {
+      const box = $('customers');
+      box.innerHTML = '';
+      if (!customers.length) {
+        box.innerHTML = '<p class="text-center text-sm text-stone-500">等待客人…</p>';
+        return;
+      }
+      customers.forEach(c => {
+        const pct = (c.time / c.max) * 100;
+        const urgent = pct < 35;
+        const div = document.createElement('div');
+        div.className = 'customer' + (urgent ? ' urgent' : '');
+        div.innerHTML = `
+          <div class="flex justify-between items-center">
+            <span class="text-xl">${c.faces[Math.floor(Math.random()*c.faces.length)]}</span>
+            <div class="flex-1 mx-2">
+              <div class="font-black text-sm">${c.dish.emoji} ${c.dish.name}</div>
+              <div class="text-xs text-stone-500">${c.dish.ings.join(' + ')}</div>
+            </div>
+            <span class="text-xs font-bold text-orange-700">$${c.dish.price}</span>
+          </div>
+          <div class="timer-bar"><div class="timer-fill" style="width:${pct}%;background:${pct<35?'#ef4444':pct<60?'#fbbf24':'#22c55e'}"></div></div>
+        `;
+        box.appendChild(div);
+      });
+    }
+
+    function renderPlate() {
+      const p = $('plate');
+      if (!plate.length) {
+        p.innerHTML = '<span class="text-stone-400 text-sm">點下方食材…</span>';
+        return;
+      }
+      p.innerHTML = plate.map(i => `<span class="tag">${i}</span>`).join('');
+    }
+
+    function renderIngs() {
+      const box = $('ings');
+      box.innerHTML = '';
+      // show ingredients relevant to current menu + a few extras
+      const menu = availableMenu();
+      const set = new Set(menu.flatMap(m => m.ings));
+      const list = [...set];
+      list.forEach(ing => {
+        const b = document.createElement('button');
+        b.className = 'ing-btn' + (plate.includes(ing) ? ' on' : '');
+        b.textContent = ing;
+        b.onclick = () => {
+          if (!playing) return;
+          if (plate.includes(ing)) plate = plate.filter(x => x !== ing);
+          else plate.push(ing);
+          renderPlate();
+          renderIngs();
+        };
+        box.appendChild(b);
+      });
+    }
+
+    function sameIngs(a, b) {
+      if (a.length !== b.length) return false;
+      const sa = [...a].sort(), sb = [...b].sort();
+      return sa.every((v, i) => v === sb[i]);
+    }
+
+    function serve() {
+      if (!playing || !plate.length || !customers.length) {
+        $('statusMsg').textContent = '沒有可出的餐';
+        return;
+      }
+      // match first customer whose order matches, else first customer wrong
+      let idx = customers.findIndex(c => sameIngs(c.dish.ings, plate));
+      if (idx === -1) {
+        // wrong order - punish first customer a bit / clear plate
+        rating = Math.max(1, +(rating - 0.3).toFixed(1));
+        score = Math.max(0, score - 5);
+        $('statusMsg').textContent = '不對啦！客人皺眉…';
+        plate = [];
+        renderPlate();
+        renderIngs();
+        updateHUD();
+        return;
+      }
+      const c = customers[idx];
+      const timeBonus = Math.floor((c.time / c.max) * 15);
+      score += c.dish.price + timeBonus;
+      served++;
+      rating = Math.min(5, +(rating + 0.1).toFixed(1));
+      customers.splice(idx, 1);
+      plate = [];
+      $('statusMsg').textContent = `出餐成功！+$${c.dish.price + timeBonus}`;
+      renderPlate();
+      renderIngs();
+      renderCustomers();
+      updateHUD();
+      // maybe immediate new customer
+      if (customers.length < maxCust && Math.random() < 0.6) spawnCustomer();
+    }
+
+    function updateHUD() {
+      $('score').textContent = score;
+      $('rating').textContent = rating.toFixed(1);
+      $('served').textContent = served;
+      $('time').textContent = Math.ceil(timeLeft);
+    }
+
+    function gameTick() {
+      if (!playing) return;
+      timeLeft -= 0.1;
+      customers.forEach(c => { c.time -= 0.1; });
+      // leave
+      const before = customers.length;
+      customers = customers.filter(c => {
+        if (c.time > 0) return true;
+        rating = Math.max(1, +(rating - 0.5).toFixed(1));
+        score = Math.max(0, score - 10);
+        $('statusMsg').textContent = '客人不等了，走了…';
+        return false;
+      });
+      if (customers.length !== before) renderCustomers();
+      else renderCustomers();
+      updateHUD();
+      if (timeLeft <= 0) endGame();
+    }
+
+    function startGame() {
+      maxCust = parseInt($('maxCust').value, 10);
+      orderLimit = parseInt($('orderLimit').value, 10);
+      menuLv = parseInt($('menuLv').value, 10);
+      duration = parseInt($('duration').value, 10);
+      score = 0; rating = 5; served = 0; timeLeft = duration;
+      customers = []; plate = []; playing = true;
+      $('setup').classList.add('hidden');
+      $('result').classList.add('hidden');
+      $('game').classList.remove('hidden');
+      renderIngs();
+      renderPlate();
+      renderCustomers();
+      updateHUD();
+      spawnCustomer();
+      if (maxCust > 1) setTimeout(spawnCustomer, 1500);
+      clearInterval(tickTimer);
+      clearInterval(spawnTimer);
+      tickTimer = setInterval(gameTick, 100);
+      spawnTimer = setInterval(() => {
+        if (customers.length < maxCust) spawnCustomer();
+      }, 3500);
+    }
+
+    function endGame() {
+      playing = false;
+      clearInterval(tickTimer);
+      clearInterval(spawnTimer);
+      score += Math.round(rating * 10) + served * 5;
+      const hs = saveHS(score);
+      $('game').classList.add('hidden');
+      $('result').classList.remove('hidden');
+      $('resultTitle').textContent = rating >= 4 ? '好評如潮！' : rating >= 3 ? '普通的一晚' : '差點被客訴…';
+      $('finalScore').textContent = score;
+      $('finalServed').textContent = served;
+      $('finalRating').textContent = rating.toFixed(1);
+      $('finalHS').textContent = hs;
+      $('hsSetup').textContent = hs;
+    }
+
+    function quit() {
+      playing = false;
+      clearInterval(tickTimer);
+      clearInterval(spawnTimer);
+      $('game').classList.add('hidden');
+      $('setup').classList.remove('hidden');
+    }
+
+    $('startBtn').onclick = startGame;
+    $('againBtn').onclick = startGame;
+    $('quitBtn').onclick = quit;
+    $('clearBtn').onclick = () => { plate = []; renderPlate(); renderIngs(); };
+    $('serveBtn').onclick = serve;
+  </script>
+</body>
+</html>

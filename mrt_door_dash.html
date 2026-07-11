@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>捷運月台：關門夾心大作戰</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
+  <style>
+    * { font-family: 'Noto Sans TC', sans-serif; box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh; color: #e2e8f0;
+      background: linear-gradient(180deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+      touch-action: manipulation;
+    }
+    .panel {
+      background: rgba(15, 23, 42, 0.92);
+      border: 2px solid #38bdf8;
+      border-radius: 16px;
+      box-shadow: 0 0 24px rgba(56, 189, 248, 0.25);
+    }
+    .door-frame {
+      background: linear-gradient(180deg, #334155, #1e293b);
+      border: 4px solid #64748b;
+      border-radius: 12px;
+      position: relative;
+      overflow: hidden;
+      height: 220px;
+    }
+    .door {
+      position: absolute; top: 0; bottom: 0; width: 50%;
+      background: linear-gradient(90deg, #0ea5e9, #0284c7);
+      border: 3px solid #0369a1;
+      transition: transform 0.15s linear;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 900; color: white; font-size: 1.5rem;
+    }
+    .door.left { left: 0; transform-origin: left; }
+    .door.right { right: 0; transform-origin: right; }
+    .door.open.left { transform: translateX(-92%); }
+    .door.open.right { transform: translateX(92%); }
+    .platform {
+      height: 48px;
+      background: repeating-linear-gradient(90deg, #fbbf24 0 20px, #1e293b 20px 40px);
+      border-radius: 0 0 8px 8px;
+      display: flex; align-items: center; justify-content: center;
+      color: #0f172a; font-weight: 900; font-size: 0.75rem;
+    }
+    .crowd {
+      position: absolute; bottom: 56px; left: 50%; transform: translateX(-50%);
+      font-size: 2rem; opacity: 0.85; pointer-events: none;
+      transition: opacity 0.2s;
+    }
+    .btn-main {
+      background: linear-gradient(135deg, #22d3ee, #3b82f6);
+      border: 2px solid #67e8f9; color: #0f172a; font-weight: 900;
+      border-radius: 12px; padding: 14px 24px; width: 100%;
+      font-size: 1.1rem; cursor: pointer;
+    }
+    .btn-main:active { transform: scale(0.97); }
+    .btn-main:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-secondary {
+      background: #334155; border: 2px solid #64748b; color: #e2e8f0;
+      border-radius: 10px; padding: 10px 16px; font-weight: 700; cursor: pointer;
+    }
+    .led {
+      font-family: ui-monospace, monospace;
+      background: #020617; color: #4ade80;
+      padding: 6px 12px; border-radius: 6px; border: 1px solid #166534;
+      letter-spacing: 0.05em;
+    }
+    input[type=range] { width: 100%; accent-color: #22d3ee; }
+  </style>
+</head>
+<body class="flex flex-col items-center p-4 pb-10">
+  <div class="w-full max-w-md">
+    <div class="text-center mb-4">
+      <div class="text-4xl mb-1">🚇🚪</div>
+      <h1 class="text-2xl font-black text-cyan-300">捷運月台：關門夾心大作戰</h1>
+      <p class="text-sm text-slate-400 mt-1">門開就衝 · 門關別夾 · 連站 combo</p>
+    </div>
+
+    <div id="setup" class="panel p-5 mb-4">
+      <h2 class="font-bold text-cyan-200 mb-3">設定</h2>
+      <label class="block text-sm mb-1">門開時間：<span id="openVal">1.2</span> 秒</label>
+      <input type="range" id="openTime" min="0.6" max="2.0" step="0.1" value="1.2">
+      <label class="block text-sm mt-3 mb-1">目標站數：<span id="stationVal">8</span></label>
+      <input type="range" id="stations" min="5" max="15" step="1" value="8">
+      <label class="block text-sm mt-3 mb-1">人潮密度：<span id="crowdVal">中</span></label>
+      <input type="range" id="crowd" min="0" max="2" step="1" value="1">
+      <p class="text-xs text-slate-400 mt-3">最高分：<span id="hsSetup">0</span></p>
+      <button class="btn-main mt-4" id="startBtn">發車！</button>
+      <a href="index.html" class="block text-center text-sm text-slate-400 mt-3 underline">← 回遊戲間</a>
+    </div>
+
+    <div id="game" class="hidden">
+      <div class="flex justify-between text-sm mb-2 gap-2 flex-wrap">
+        <span class="led">站 <span id="curStation">0</span>/<span id="maxStation">8</span></span>
+        <span class="led">分 <span id="score">0</span></span>
+        <span class="led">命 <span id="lives">3</span></span>
+        <span class="led">COMBO <span id="combo">0</span></span>
+      </div>
+      <div class="panel p-3 mb-3">
+        <div class="led text-center text-xs mb-2 overflow-hidden whitespace-nowrap" id="ticker">下一班車進站中…</div>
+        <div class="door-frame" id="doorFrame">
+          <div class="door left" id="doorL">左</div>
+          <div class="door right" id="doorR">右</div>
+          <div class="crowd" id="crowdEmoji">👥</div>
+        </div>
+        <div class="platform">月台黃線 · 請勿跨越</div>
+        <p class="text-center text-sm mt-3 h-6 font-bold" id="statusMsg">準備上車…</p>
+        <button class="btn-main mt-2" id="boardBtn">卡位上車！</button>
+      </div>
+      <button class="btn-secondary w-full" id="quitBtn">放棄回設定</button>
+    </div>
+
+    <div id="result" class="panel p-6 text-center hidden">
+      <div class="text-5xl mb-2" id="resultEmoji">🎉</div>
+      <h2 class="text-xl font-black text-cyan-300 mb-2" id="resultTitle">到站！</h2>
+      <p class="text-lg mb-1">分數：<span id="finalScore" class="font-black text-yellow-300">0</span></p>
+      <p class="text-sm text-slate-400 mb-4">最高分：<span id="finalHS">0</span></p>
+      <button class="btn-main mb-2" id="againBtn">再來一班</button>
+      <a href="index.html" class="block text-sm text-slate-400 underline">← 回遊戲間</a>
+    </div>
+  </div>
+
+  <script>
+    const HS_KEY = 'mrt_door_dash_hs';
+    const $ = id => document.getElementById(id);
+    const crowdLabels = ['低', '中', '高'];
+
+    let state = 'setup';
+    let score = 0, lives = 3, combo = 0, station = 0, maxStations = 8;
+    let doorOpen = false, canBoard = false, cycleTimer = null, openMs = 1200;
+    let crowdLevel = 1, phase = 'wait';
+
+    function loadHS() { return parseInt(localStorage.getItem(HS_KEY) || '0', 10); }
+    function saveHS(s) {
+      const hs = loadHS();
+      if (s > hs) { localStorage.setItem(HS_KEY, String(s)); return s; }
+      return hs;
+    }
+
+    $('openTime').oninput = e => $('openVal').textContent = e.target.value;
+    $('stations').oninput = e => $('stationVal').textContent = e.target.value;
+    $('crowd').oninput = e => $('crowdVal').textContent = crowdLabels[+e.target.value];
+    $('hsSetup').textContent = loadHS();
+
+    function setDoors(open) {
+      doorOpen = open;
+      $('doorL').classList.toggle('open', open);
+      $('doorR').classList.toggle('open', open);
+    }
+
+    function clearCycle() {
+      if (cycleTimer) { clearTimeout(cycleTimer); cycleTimer = null; }
+    }
+
+    function updateHUD() {
+      $('curStation').textContent = station;
+      $('maxStation').textContent = maxStations;
+      $('score').textContent = score;
+      $('lives').textContent = lives;
+      $('combo').textContent = combo;
+    }
+
+    function startGame() {
+      openMs = parseFloat($('openTime').value) * 1000;
+      maxStations = parseInt($('stations').value, 10);
+      crowdLevel = parseInt($('crowd').value, 10);
+      score = 0; lives = 3; combo = 0; station = 0;
+      state = 'playing';
+      $('setup').classList.add('hidden');
+      $('result').classList.add('hidden');
+      $('game').classList.remove('hidden');
+      updateHUD();
+      nextCycle();
+    }
+
+    function nextCycle() {
+      if (state !== 'playing') return;
+      clearCycle();
+      phase = 'wait';
+      canBoard = false;
+      setDoors(false);
+      const wait = 800 + Math.random() * 900 - crowdLevel * 100;
+      $('statusMsg').textContent = '列車進站…';
+      $('statusMsg').style.color = '#94a3b8';
+      $('ticker').textContent = '下一班車進站中… 請勿強行上車';
+      $('crowdEmoji').style.opacity = String(0.4 + crowdLevel * 0.25);
+      cycleTimer = setTimeout(() => {
+        phase = 'open';
+        canBoard = true;
+        setDoors(true);
+        $('statusMsg').textContent = '門開！快上車！';
+        $('statusMsg').style.color = '#4ade80';
+        $('ticker').textContent = '車門開啟 · 請盡速上車';
+        const openDur = openMs * (1 - crowdLevel * 0.08);
+        cycleTimer = setTimeout(() => {
+          phase = 'closing';
+          canBoard = false;
+          setDoors(false);
+          $('statusMsg').textContent = '門關了…';
+          $('statusMsg').style.color = '#f87171';
+          $('ticker').textContent = '車門關閉 · 下一站準備';
+          // Missed the train
+          combo = 0;
+          score = Math.max(0, score - 5);
+          updateHUD();
+          cycleTimer = setTimeout(() => {
+            if (lives <= 0) return endGame(false);
+            nextCycle();
+          }, 700);
+        }, openDur);
+      }, Math.max(400, wait));
+    }
+
+    function tryBoard() {
+      if (state !== 'playing') return;
+      if (phase === 'open' && canBoard) {
+        canBoard = false;
+        clearCycle();
+        station++;
+        combo++;
+        const gain = 10 + combo * 3;
+        score += gain;
+        $('statusMsg').textContent = `上車成功！+${gain}`;
+        $('statusMsg').style.color = '#facc15';
+        $('ticker').textContent = `第 ${station} 站通過 · COMBO x${combo}`;
+        setDoors(false);
+        updateHUD();
+        if (station >= maxStations) {
+          setTimeout(() => endGame(true), 500);
+          return;
+        }
+        cycleTimer = setTimeout(nextCycle, 600);
+      } else if (phase === 'closing' || phase === 'wait') {
+        // Clamped!
+        lives--;
+        combo = 0;
+        score = Math.max(0, score - 15);
+        $('statusMsg').textContent = lives > 0 ? '被門夾了！💔' : '夾到沒電了…';
+        $('statusMsg').style.color = '#f43f5e';
+        $('ticker').textContent = '請勿在車門關閉時強行上車';
+        updateHUD();
+        if (lives <= 0) {
+          clearCycle();
+          setTimeout(() => endGame(false), 600);
+        }
+      }
+    }
+
+    function endGame(win) {
+      state = 'result';
+      clearCycle();
+      const hs = saveHS(score);
+      $('game').classList.add('hidden');
+      $('result').classList.remove('hidden');
+      $('resultEmoji').textContent = win ? '🎉' : '😵';
+      $('resultTitle').textContent = win ? '全線通車！' : '被夾下線…';
+      $('finalScore').textContent = score;
+      $('finalHS').textContent = hs;
+      $('hsSetup').textContent = hs;
+    }
+
+    function quitToSetup() {
+      clearCycle();
+      state = 'setup';
+      $('game').classList.add('hidden');
+      $('result').classList.add('hidden');
+      $('setup').classList.remove('hidden');
+    }
+
+    $('startBtn').onclick = startGame;
+    $('boardBtn').onclick = tryBoard;
+    $('againBtn').onclick = startGame;
+    $('quitBtn').onclick = quitToSetup;
+  </script>
+</body>
+</html>
