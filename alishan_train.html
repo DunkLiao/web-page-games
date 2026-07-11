@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>阿里山雲海避障列車 - Alishan Forest Train</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            background-color: #051607;
+            color: #ecfdf5;
+            font-family: 'Noto Sans TC', sans-serif;
+            touch-action: none;
+            overflow: hidden;
+        }
+        .glass {
+            background: rgba(6, 78, 59, 0.8);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(248, 113, 113, 0.25);
+            border-radius: 20px;
+        }
+        .btn-cherry {
+            background: linear-gradient(135deg, #f43f5e, #be123c);
+            color: #ffffff;
+            font-weight: 900;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 2px solid #fecdd3;
+        }
+        .btn-cherry:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(244, 63, 94, 0.35);
+        }
+        canvas {
+            display: block;
+            background: linear-gradient(to bottom, #bae6fd 0%, #cbd5e1 50%, #1e3a8a 100%);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen p-4">
+
+    <!-- HUD -->
+    <div class="fixed top-4 left-4 right-4 flex justify-between gap-4 pointer-events-none z-10 max-w-lg mx-auto">
+        <!-- 乘客 -->
+        <div class="glass px-4 py-2 flex items-center gap-3 pointer-events-auto">
+            <span class="text-2xl">🧑‍🤝‍🧑</span>
+            <div>
+                <div class="text-[9px] text-rose-300 font-black uppercase tracking-widest">搭乘旅客</div>
+                <div id="scoreLabel" class="text-xl font-black text-rose-300">0 人</div>
+            </div>
+        </div>
+        <!-- 引擎耐久度 -->
+        <div class="glass px-4 py-2 flex items-center gap-3 pointer-events-auto">
+            <span class="text-2xl">🚂</span>
+            <div>
+                <div class="text-[9px] text-rose-300 font-black uppercase tracking-widest">列車耐久度</div>
+                <div id="hpLabel" class="text-xl font-black text-emerald-300">100%</div>
+            </div>
+        </div>
+        <!-- 距離 -->
+        <div class="glass px-4 py-2 flex items-center gap-3 pointer-events-auto">
+            <span class="text-2xl">🛤️</span>
+            <div>
+                <div class="text-[9px] text-rose-300 font-black uppercase tracking-widest">行駛里程</div>
+                <div id="distLabel" class="text-xl font-black text-white">0 m</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 遊戲主要區域 -->
+    <div class="w-full max-w-2xl flex flex-col items-center gap-4 relative">
+        
+        <canvas id="gameCanvas" width="800" height="380" class="w-full rounded-3xl border-2 border-rose-400 shadow-2xl"></canvas>
+
+        <!-- 汽笛吹響按鈕 -->
+        <div class="flex gap-4 w-full max-w-xs justify-center">
+            <button id="whistleBtn" class="btn-cherry w-full py-4 rounded-xl text-lg shadow-lg select-none">
+                🔊 拉響汽笛 (Whistle)
+            </button>
+        </div>
+
+        <div class="text-slate-300 text-xs text-center hidden md:block">
+            操控提示：直接 <span class="text-rose-400 font-bold">點擊鐵軌上的障礙物</span>（巨石或原木）將其清除！當 <span class="text-yellow-400 font-bold">台灣黑熊 🐻</span> 出現時，點擊按鈕吹哨嚇跑牠！
+        </div>
+
+        <!-- 返回選單 -->
+        <button id="inGameResetBtn" class="glass px-4 py-2 text-xs font-bold text-rose-300 flex items-center gap-1 hover:text-white transition-colors">
+            <span>🏠 返回主選單</span>
+        </button>
+    </div>
+
+    <!-- 選單 Overlay -->
+    <div id="menuOverlay" class="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center z-50 p-6">
+        <div class="glass p-8 rounded-[32px] shadow-2xl max-w-md w-full text-center border-2 border-rose-400/50">
+            <div class="text-6xl mb-4 animate-bounce">🚂</div>
+            <h1 class="text-3xl font-black text-rose-400 mb-2">阿里山避障列車</h1>
+            <p class="text-stone-300 text-xs mb-6 leading-relaxed">
+                經典紅色小火車正穿行在櫻花林與阿里山雲海之間！鐵軌前方會出現落石、倒塌原木或野生台灣黑熊。請快速點擊粉碎石塊、移除木頭；當黑熊攔路時，拉響火車汽笛將牠引導回森林。安全行駛並搭載月台上的旅客吧！
+            </p>
+
+            <!-- 設定區 -->
+            <div class="space-y-4 mb-6 bg-emerald-950/60 p-4 rounded-2xl border border-rose-400/20 text-left text-sm">
+                <div class="flex flex-col gap-1">
+                    <div class="flex justify-between font-bold text-rose-300">
+                        <span>列車速度</span>
+                        <span id="speedValue">中等時速</span>
+                    </div>
+                    <input type="range" id="speedSetting" min="1" max="3" step="1" value="2" class="w-full h-1.5 bg-emerald-900 rounded-lg appearance-none cursor-pointer accent-rose-500">
+                </div>
+                <div class="flex flex-col gap-1">
+                    <div class="flex justify-between font-bold text-rose-300">
+                        <span>軌道險情密度</span>
+                        <span id="densityValue">標準</span>
+                    </div>
+                    <input type="range" id="densitySetting" min="1" max="3" step="1" value="2" class="w-full h-1.5 bg-emerald-900 rounded-lg appearance-none cursor-pointer accent-rose-500">
+                </div>
+            </div>
+
+            <!-- 結算顯示 -->
+            <div id="finalScoreArea" class="hidden mb-6 p-4 bg-rose-500/10 rounded-2xl border border-rose-500/30">
+                <p class="text-rose-400 text-[10px] font-black tracking-wider uppercase mb-1">今日護送旅客</p>
+                <p id="finalScore" class="text-4xl font-black text-rose-300">0 人</p>
+                <p id="finalDist" class="text-xs text-rose-400 font-bold mt-1">行駛里程：0 m</p>
+            </div>
+
+            <button id="startBtn" class="btn-cherry w-full py-4 rounded-xl text-lg shadow-lg">
+                啟動列車
+            </button>
+        </div>
+    </div>
+
+    <!-- Web Audio & Canvas 邏輯 -->
+    <script>
+        const AudioSynth = {
+            ctx: null,
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            },
+            play(type) {
+                this.init();
+                if (!this.ctx) return;
+                
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                if (type === 'whistle') {
+                    // 火車汽笛聲 (雙音高頻汽笛)
+                    const osc2 = this.ctx.createOscillator();
+                    const gain2 = this.ctx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(660, now); // E5
+                    osc.frequency.linearRampToValueAtTime(680, now + 0.5);
+                    osc2.type = 'sawtooth';
+                    osc2.frequency.setValueAtTime(880, now); // A5
+                    osc2.frequency.linearRampToValueAtTime(900, now + 0.5);
+
+                    osc2.connect(gain2);
+                    gain2.connect(this.ctx.destination);
+
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+                    gain2.gain.setValueAtTime(0.2, now);
+                    gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+                    
+                    osc.start(now);
+                    osc2.start(now);
+                    osc.stop(now + 0.5);
+                    osc2.stop(now + 0.5);
+                } else if (type === 'smash') {
+                    // 石頭擊碎
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(140, now);
+                    osc.frequency.exponentialRampToValueAtTime(30, now + 0.15);
+                    gain.gain.setValueAtTime(0.4, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+                    osc.start(now);
+                    osc.stop(now + 0.15);
+                } else if (type === 'crash') {
+                    // 火車撞擊
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(100, now);
+                    osc.frequency.linearRampToValueAtTime(20, now + 0.4);
+                    gain.gain.setValueAtTime(0.6, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+                    osc.start(now);
+                    osc.stop(now + 0.4);
+                } else if (type === 'collect') {
+                    // 接載乘客
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(587.33, now); // D5
+                    osc.frequency.setValueAtTime(783.99, now + 0.08); // G5
+                    gain.gain.setValueAtTime(0.25, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+                    osc.start(now);
+                    osc.stop(now + 0.25);
+                }
+            }
+        };
+
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreLabel = document.getElementById('scoreLabel');
+        const hpLabel = document.getElementById('hpLabel');
+        const distLabel = document.getElementById('distLabel');
+
+        const menuOverlay = document.getElementById('menuOverlay');
+        const startBtn = document.getElementById('startBtn');
+        const speedSetting = document.getElementById('speedSetting');
+        const densitySetting = document.getElementById('densitySetting');
+        const speedValueDisplay = document.getElementById('speedValue');
+        const densityValueDisplay = document.getElementById('densityValue');
+
+        const finalScoreArea = document.getElementById('finalScoreArea');
+        const finalScore = document.getElementById('finalScore');
+        const finalDist = document.getElementById('finalDist');
+        const inGameResetBtn = document.getElementById('inGameResetBtn');
+
+        const whistleBtn = document.getElementById('whistleBtn');
+
+        const speedNames = ["低速鐵路", "中速森鐵", "極速列車"];
+        const densityNames = ["安全第一", "一般多障礙", "地獄級軌道"];
+        
+        speedSetting.oninput = () => speedValueDisplay.innerText = speedNames[speedSetting.value - 1];
+        densitySetting.oninput = () => densityValueDisplay.innerText = densityNames[densitySetting.value - 1];
+
+        let isPlaying = false;
+        let passengers = 0;
+        let hp = 100;
+        let distance = 0;
+        let frameId;
+        
+        let roadSpeed = 3;
+        let spawnInterval = 100;
+        let frameCount = 0;
+
+        let obstacles = [];
+        let particles = [];
+        let blossoms = []; // 飄落櫻花
+        let whistleActiveTimer = 0;
+
+        startBtn.onclick = () => {
+            AudioSynth.init();
+            passengers = 0;
+            hp = 100;
+            distance = 0;
+            
+            const spd = parseInt(speedSetting.value);
+            roadSpeed = spd === 1 ? 2.5 : spd === 2 ? 4.5 : 6.5;
+
+            const dens = parseInt(densitySetting.value);
+            spawnInterval = dens === 1 ? 140 : dens === 2 ? 90 : 50;
+
+            obstacles = [];
+            particles = [];
+            blossoms = [];
+            frameCount = 0;
+            isPlaying = true;
+
+            // 預先生成一些櫻花瓣
+            for (let i = 0; i < 20; i++) {
+                blossoms.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    vx: -(1 + Math.random() * 2),
+                    vy: 1 + Math.random() * 1.5,
+                    size: 3 + Math.random() * 4,
+                    rot: Math.random() * Math.PI
+                });
+            }
+
+            menuOverlay.classList.add('hidden');
+            updateHUD();
+            animate();
+        };
+
+        inGameResetBtn.onclick = () => {
+            endGame();
+        };
+
+        // 點擊事件：直接點擊軌道上的障礙物
+        function getCanvasPos(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return {
+                x: ((clientX - rect.left) / rect.width) * canvas.width,
+                y: ((clientY - rect.top) / rect.height) * canvas.height
+            };
+        }
+
+        const handleDigOrSmash = (e) => {
+            if (!isPlaying) return;
+            const pos = getCanvasPos(e);
+
+            // 檢查是否點中可點擊的障礙物 (巨石、原木)
+            for (let i = obstacles.length - 1; i >= 0; i--) {
+                const obs = obstacles[i];
+                if ((obs.type === 'rock' || obs.type === 'log') && Math.abs(pos.x - obs.x) < 40 && Math.abs(pos.y - obs.y) < 40) {
+                    AudioSynth.play('smash');
+                    createShatterParticles(obs.x, obs.y, obs.type === 'rock' ? '#888888' : '#854d0e');
+                    obstacles.splice(i, 1);
+                    break;
+                }
+            }
+        };
+
+        canvas.addEventListener('mousedown', handleDigOrSmash);
+        canvas.addEventListener('touchstart', handleDigOrSmash);
+
+        // 汽笛按鈕
+        whistleBtn.onclick = () => {
+            if (!isPlaying) return;
+            AudioSynth.play('whistle');
+            whistleActiveTimer = 35; // 汽笛判定有效時限
+            
+            // 在火車煙囪冒出大蒸氣
+            for (let i = 0; i < 15; i++) {
+                particles.push({
+                    x: 140,
+                    y: 190,
+                    vx: -2 - Math.random() * 4,
+                    vy: -4 - Math.random() * 4,
+                    size: 6 + Math.random() * 10,
+                    color: 'rgba(255, 255, 255, 0.4)',
+                    alpha: 1
+                });
+            }
+        };
+
+        function updateHUD() {
+            scoreLabel.innerText = `${passengers} 人`;
+            hpLabel.innerText = `${hp}%`;
+            distLabel.innerText = `${Math.floor(distance)} m`;
+            
+            if (hp < 30) {
+                hpLabel.className = "text-xl font-black text-red-500 animate-pulse";
+            } else if (hp < 65) {
+                hpLabel.className = "text-xl font-black text-yellow-500";
+            } else {
+                hpLabel.className = "text-xl font-black text-emerald-300";
+            }
+        }
+
+        function createObstacle() {
+            const roll = Math.random();
+            let type = 'rock'; // 🪨
+            let width = 40;
+
+            if (roll > 0.7) {
+                type = 'bear'; // 🐻 台灣黑熊
+                width = 50;
+            } else if (roll > 0.4) {
+                type = 'log'; // 🪵 原木
+                width = 45;
+            } else if (roll > 0.25) {
+                type = 'station'; // 🚉 乘客月台 (收集要素)
+                width = 30;
+            }
+
+            return {
+                x: canvas.width + 60,
+                y: 280, // 固定在鐵軌平面
+                type: type,
+                width: width,
+                bearScared: false
+            };
+        }
+
+        function animate() {
+            if (!isPlaying) return;
+            frameCount++;
+            distance += roadSpeed * 0.1;
+
+            if (whistleActiveTimer > 0) whistleActiveTimer--;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 1. 繪製遠山與背景雲海 (平差滾動)
+            ctx.fillStyle = '#bae6fd';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // 遠山 (深綠)
+            ctx.fillStyle = '#064e3b';
+            ctx.beginPath();
+            ctx.moveTo(0, 240);
+            ctx.lineTo(200, 160);
+            ctx.lineTo(450, 220);
+            ctx.lineTo(600, 150);
+            ctx.lineTo(800, 240);
+            ctx.lineTo(800, 380);
+            ctx.lineTo(0, 380);
+            ctx.closePath();
+            ctx.fill();
+
+            // 滾動雲海
+            ctx.fillStyle = 'rgba(255,255,255,0.45)';
+            ctx.fillRect(0, 210, canvas.width, 70);
+
+            // 2. 繪製鐵軌
+            ctx.strokeStyle = '#64748b';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(0, 300);
+            ctx.lineTo(canvas.width, 300);
+            ctx.stroke();
+
+            // 枕木滾動
+            ctx.strokeStyle = '#475569';
+            ctx.lineWidth = 6;
+            const tieOffset = (frameCount * roadSpeed) % 40;
+            for (let x = -tieOffset; x < canvas.width; x += 40) {
+                ctx.beginPath();
+                ctx.moveTo(x, 300);
+                ctx.lineTo(x + 5, 310);
+                ctx.stroke();
+            }
+
+            // 3. 繪製小火車 (🚂)
+            // 繪製煙囪煙霧
+            if (frameCount % 4 === 0) {
+                particles.push({
+                    x: 130,
+                    y: 200,
+                    vx: -roadSpeed,
+                    vy: -1 - Math.random() * 2,
+                    size: 8 + Math.random() * 8,
+                    color: 'rgba(226, 232, 240, 0.45)',
+                    alpha: 0.8
+                });
+            }
+
+            ctx.save();
+            // 火車頭震動
+            const trainVibe = Math.sin(frameCount * 0.4) * 2;
+            ctx.translate(60, 210 + trainVibe);
+            ctx.font = '75px serif';
+            ctx.fillText('🚂', 0, 80);
+            ctx.restore();
+
+            // 4. 生成軌道物件
+            if (frameCount % spawnInterval === 0) {
+                obstacles.push(createObstacle());
+            }
+
+            // 5. 更新與繪製軌道物件
+            for (let i = obstacles.length - 1; i >= 0; i--) {
+                const obs = obstacles[i];
+                obs.x -= roadSpeed;
+
+                ctx.save();
+                ctx.translate(obs.x, obs.y);
+
+                if (obs.type === 'rock') {
+                    ctx.font = '38px serif';
+                    ctx.fillText('🪨', -19, 10);
+                } else if (obs.type === 'log') {
+                    ctx.font = '40px serif';
+                    ctx.fillText('🪵', -20, 10);
+                } else if (obs.type === 'station') {
+                    // 月台，上面站著 1-3 位要上車的旅客
+                    ctx.fillStyle = '#b91c1c';
+                    ctx.fillRect(-15, -20, 30, 20); // 簡易站牌
+                    ctx.font = '28px serif';
+                    ctx.fillText('🧑‍🤝‍🧑', -18, -25);
+                } else if (obs.type === 'bear') {
+                    // 黑熊
+                    ctx.font = '42px serif';
+                    if (obs.bearScared) {
+                        // 被嚇跑：往左上角飛出
+                        obs.y -= 5;
+                        obs.x -= 2;
+                        ctx.save();
+                        ctx.rotate(0.2);
+                        ctx.fillText('🐻', -21, 10);
+                        ctx.restore();
+                    } else {
+                        ctx.fillText('🐻', -21, 10);
+                        
+                        // 判定汽笛恐嚇
+                        if (whistleActiveTimer > 0 && obs.x < canvas.width - 50) {
+                            obs.bearScared = true;
+                            // 嚇跑加載乘客分
+                            createShatterParticles(obs.x, obs.y, '#eab308');
+                        }
+                    }
+                }
+                ctx.restore();
+
+                // 碰撞判定 (火車在 X: 60px ~ 130px, Y: 260px 左右)
+                if (obs.x >= 60 && obs.x <= 135) {
+                    if (obs.type === 'station') {
+                        // 順利接載旅客
+                        AudioSynth.play('collect');
+                        passengers += 1 + Math.floor(Math.random() * 2);
+                        updateHUD();
+                        createShatterParticles(obs.x, obs.y - 30, '#f43f5e');
+                        obstacles.splice(i, 1);
+                    } else if (obs.type === 'bear' && obs.bearScared) {
+                        // 已嚇跑，不觸發碰撞
+                    } else {
+                        // 撞上障礙物或未嚇跑的熊
+                        AudioSynth.play('crash');
+                        const damage = obs.type === 'bear' ? 30 : 20;
+                        hp = Math.max(0, hp - damage);
+                        updateHUD();
+                        createShatterParticles(obs.x, obs.y, '#ef4444');
+                        obstacles.splice(i, 1);
+
+                        if (hp <= 0) endGame();
+                    }
+                    continue;
+                }
+
+                // 超出畫面移除
+                if (obs.x < -60) {
+                    obstacles.splice(i, 1);
+                }
+            }
+
+            // 6. 更新並繪製櫻花飄落 (🌸)
+            // 隨機飄落
+            if (frameCount % 6 === 0) {
+                blossoms.push({
+                    x: canvas.width + 10,
+                    y: Math.random() * (canvas.height - 100),
+                    vx: -(1 + Math.random() * 2.5),
+                    vy: 0.5 + Math.random() * 1.5,
+                    size: 3 + Math.random() * 5,
+                    rot: Math.random() * Math.PI
+                });
+            }
+
+            for (let i = blossoms.length - 1; i >= 0; i--) {
+                const b = blossoms[i];
+                b.x += b.vx;
+                b.y += b.vy;
+                b.rot += 0.05;
+
+                ctx.save();
+                ctx.translate(b.x, b.y);
+                ctx.rotate(b.rot);
+                ctx.fillStyle = '#f43f5e';
+                ctx.beginPath();
+                ctx.ellipse(0, 0, b.size, b.size * 0.6, 0.4, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+
+                if (b.x < -10 || b.y > canvas.height + 10) {
+                    blossoms.splice(i, 1);
+                }
+            }
+
+            // 7. 更新與繪製粒子
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.alpha -= 0.04;
+
+                ctx.save();
+                ctx.globalAlpha = p.alpha;
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+
+                if (p.alpha <= 0) {
+                    particles.splice(i, 1);
+                }
+            }
+
+            updateHUD();
+            frameId = requestAnimationFrame(animate);
+        }
+
+        function createShatterParticles(x, y, color) {
+            for (let i = 0; i < 12; i++) {
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: (Math.random() - 0.5) * 6 - 2,
+                    vy: (Math.random() - 0.5) * 6 - 2,
+                    size: 3 + Math.random() * 4,
+                    color: color,
+                    alpha: 1
+                });
+            }
+        }
+
+        function endGame() {
+            isPlaying = false;
+            cancelAnimationFrame(frameId);
+
+            finalScore.innerText = `${passengers} 人`;
+            finalDist.innerText = `行駛里程：${Math.floor(distance)} m`;
+            
+            let comment = "車輛已入庫。阿里山林道仍有未知險情！🌲";
+            if (hp <= 0) {
+                comment = "車輛受損嚴重！林道拋錨 🛠️";
+            } else if (passengers >= 15) {
+                comment = "森鐵模範駕駛！載滿山野觀光客！👑";
+            } else if (passengers >= 6) {
+                comment = "順利安全運作！旅客成功抵達神木站！👍";
+            }
+            finalComment.innerText = `評價：${comment}`;
+
+            finalScoreArea.classList.remove('hidden');
+            menuOverlay.classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>

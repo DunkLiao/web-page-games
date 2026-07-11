@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>台北機車瀑布大合流 - Taipei Scooter Waterfall</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            background-color: #0b0f19;
+            color: #f8fafc;
+            font-family: 'Noto Sans TC', sans-serif;
+            touch-action: none;
+            overflow: hidden;
+        }
+        .glass {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(249, 115, 22, 0.25);
+            border-radius: 20px;
+        }
+        .btn-sunset {
+            background: linear-gradient(135deg, #f97316, #db2777);
+            color: #ffffff;
+            font-weight: 900;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 2px solid #fbcfe8;
+        }
+        .btn-sunset:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(219, 39, 119, 0.35);
+        }
+        canvas {
+            display: block;
+            background: linear-gradient(to bottom, #1e1b4b 0%, #31102f 40%, #0f172a 100%);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen p-4">
+
+    <!-- HUD -->
+    <div class="fixed top-4 left-4 right-4 flex justify-between gap-4 pointer-events-none z-10 max-w-lg mx-auto">
+        <!-- 分數 -->
+        <div class="glass px-4 py-2 flex items-center gap-3 pointer-events-auto">
+            <span class="text-2xl">🏍️</span>
+            <div>
+                <div class="text-[9px] text-pink-400 font-black uppercase tracking-widest">分流車輛</div>
+                <div id="scoreLabel" class="text-xl font-black text-pink-300">0 輛</div>
+            </div>
+        </div>
+        <!-- 交通秩序/生命值 -->
+        <div class="glass px-4 py-2 flex items-center gap-3 pointer-events-auto">
+            <span class="text-2xl">🚦</span>
+            <div>
+                <div class="text-[9px] text-pink-400 font-black uppercase tracking-widest">道路秩序</div>
+                <div id="hpLabel" class="text-xl font-black text-green-400">100%</div>
+            </div>
+        </div>
+        <!-- 時間 -->
+        <div class="glass px-4 py-2 flex items-center gap-3 pointer-events-auto">
+            <span class="text-2xl">⏳</span>
+            <div>
+                <div class="text-[9px] text-pink-400 font-black uppercase tracking-widest">尖峰倒數</div>
+                <div id="timerLabel" class="text-xl font-black text-white">60s</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 遊戲主要區域 -->
+    <div class="w-full max-w-2xl flex flex-col items-center gap-4 relative">
+        
+        <canvas id="gameCanvas" width="600" height="420" class="w-full rounded-3xl border-2 border-pink-500 shadow-2xl"></canvas>
+
+        <div class="text-slate-400 text-xs text-center hidden md:block">
+            操作說明：使用滑鼠/手指 <span class="text-pink-400 font-bold">按住機車並拖曳/甩向</span> 左右或中央對應顏色的分流車道！
+        </div>
+
+        <!-- 返回選單 -->
+        <button id="inGameResetBtn" class="glass px-4 py-2 text-xs font-bold text-pink-300 flex items-center gap-1 hover:text-white transition-colors">
+            <span>🏠 返回主選單</span>
+        </button>
+    </div>
+
+    <!-- 選單 Overlay -->
+    <div id="menuOverlay" class="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center z-50 p-6">
+        <div class="glass p-8 rounded-[32px] shadow-2xl max-w-md w-full text-center border-2 border-pink-500/50">
+            <div class="text-6xl mb-4 animate-bounce">🛵</div>
+            <h1 class="text-3xl font-black text-pink-400 mb-2">台北機車瀑布大合流</h1>
+            <p class="text-slate-300 text-xs mb-6 leading-relaxed">
+                上下班尖峰時刻，台北大橋著名的「機車瀑布」宣洩而下！玩家扮演交通指揮官，需要在大量機車衝下橋時，將不同顏色（紅、綠、藍）的機車，利用拖曳與滑動引導分流至對應顏色的慢車道。分流出錯會造成追撞事故，影響交通秩序！
+            </p>
+
+            <!-- 設定區 -->
+            <div class="space-y-4 mb-6 bg-slate-950/60 p-4 rounded-2xl border border-pink-500/20 text-left text-sm">
+                <div class="flex flex-col gap-1">
+                    <div class="flex justify-between font-bold text-pink-300">
+                        <span>尖峰限時</span>
+                        <span id="timeValue">60秒</span>
+                    </div>
+                    <input type="range" id="timeSetting" min="30" max="120" step="10" value="60" class="w-full h-1.5 bg-slate-950 rounded-lg appearance-none cursor-pointer accent-pink-500">
+                </div>
+                <div class="flex flex-col gap-1">
+                    <div class="flex justify-between font-bold text-pink-300">
+                        <span>機車流量（車速）</span>
+                        <span id="speedValue">中等</span>
+                    </div>
+                    <input type="range" id="speedSetting" min="1" max="3" step="1" value="2" class="w-full h-1.5 bg-slate-950 rounded-lg appearance-none cursor-pointer accent-pink-500">
+                </div>
+            </div>
+
+            <!-- 結算顯示 -->
+            <div id="finalScoreArea" class="hidden mb-6 p-4 bg-pink-500/10 rounded-2xl border border-pink-500/30">
+                <p class="text-pink-400 text-[10px] font-black tracking-wider uppercase mb-1">本次引導車輛數</p>
+                <p id="finalScore" class="text-4xl font-black text-pink-300">0 輛</p>
+                <p id="finalComment" class="text-xs text-stone-300 font-bold mt-1">評價：合格義交</p>
+            </div>
+
+            <button id="startBtn" class="btn-sunset w-full py-4 rounded-xl text-lg shadow-lg">
+                引導交通
+            </button>
+        </div>
+    </div>
+
+    <!-- Web Audio & Canvas 邏輯 -->
+    <script>
+        const AudioSynth = {
+            ctx: null,
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            },
+            play(type) {
+                this.init();
+                if (!this.ctx) return;
+                
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                if (type === 'beep') {
+                    // 合流喇叭聲 (嗶嗶)
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(880, now); // A5
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+                    osc.start(now);
+                    osc.stop(now + 0.12);
+                } else if (type === 'success') {
+                    // 分流成功 (輕快短音)
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(523.25, now); // C5
+                    osc.frequency.setValueAtTime(659.25, now + 0.06); // E5
+                    gain.gain.setValueAtTime(0.25, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+                    osc.start(now);
+                    osc.stop(now + 0.15);
+                } else if (type === 'crash') {
+                    // 追撞車禍 (刺耳摩擦與低沉撞擊)
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(250, now);
+                    osc.frequency.linearRampToValueAtTime(50, now + 0.35);
+                    gain.gain.setValueAtTime(0.45, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+                    osc.start(now);
+                    osc.stop(now + 0.35);
+                }
+            }
+        };
+
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreLabel = document.getElementById('scoreLabel');
+        const hpLabel = document.getElementById('hpLabel');
+        const timerLabel = document.getElementById('timerLabel');
+
+        const menuOverlay = document.getElementById('menuOverlay');
+        const startBtn = document.getElementById('startBtn');
+        const timeSetting = document.getElementById('timeSetting');
+        const speedSetting = document.getElementById('speedSetting');
+        const timeValueDisplay = document.getElementById('timeValue');
+        const speedValueDisplay = document.getElementById('speedValue');
+
+        const finalScoreArea = document.getElementById('finalScoreArea');
+        const finalScore = document.getElementById('finalScore');
+        const finalComment = document.getElementById('finalComment');
+        const inGameResetBtn = document.getElementById('inGameResetBtn');
+
+        const speedNames = ["緩慢", "中等", "狂暴"];
+        speedSetting.oninput = () => speedValueDisplay.innerText = speedNames[speedSetting.value - 1];
+        timeSetting.oninput = () => timeValueDisplay.innerText = `${timeSetting.value}秒`;
+
+        let isPlaying = false;
+        let score = 0;
+        let hp = 100;
+        let timeLeft = 60;
+        let timerInterval = null;
+        let frameId;
+
+        // 慢車道 X 軸定位
+        // 0: 左車道 (藍) -> x: 100
+        // 1: 中車道 (綠) -> x: 300
+        // 2: 右車道 (紅) -> x: 500
+        const laneX = [120, 300, 480];
+        const laneColors = ['#3b82f6', '#10b981', '#ef4444']; // 藍, 綠, 紅
+        const laneNames = ['藍色慢車道', '綠色慢車道', '紅色慢車道'];
+
+        let scooters = [];
+        let particles = [];
+        let selectedScooter = null;
+        let dragOffset = { x: 0, y: 0 };
+        let baseSpeed = 2;
+        let spawnInterval = 90;
+        let frameCount = 0;
+        let screenShake = 0;
+
+        startBtn.onclick = () => {
+            AudioSynth.init();
+            score = 0;
+            hp = 100;
+            timeLeft = parseInt(timeSetting.value);
+            
+            const spdLvl = parseInt(speedSetting.value);
+            baseSpeed = spdLvl === 1 ? 1.5 : spdLvl === 2 ? 2.5 : 3.5;
+            spawnInterval = spdLvl === 1 ? 110 : spdLvl === 2 ? 80 : 50;
+
+            scooters = [];
+            particles = [];
+            selectedScooter = null;
+            frameCount = 0;
+            screenShake = 0;
+            isPlaying = true;
+
+            menuOverlay.classList.add('hidden');
+            updateHUD();
+            startTimer();
+            animate();
+        };
+
+        inGameResetBtn.onclick = () => {
+            endGame();
+        };
+
+        // 觸控與滑鼠事件
+        function getMousePos(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return {
+                x: ((clientX - rect.left) / rect.width) * canvas.width,
+                y: ((clientY - rect.top) / rect.height) * canvas.height
+            };
+        }
+
+        const handleStart = (e) => {
+            if (!isPlaying) return;
+            const pos = getMousePos(e);
+            
+            // 尋找最近的未分流機車 (Y軸要在拖曳範圍內)
+            for (let s of scooters) {
+                if (!s.merged && Math.abs(pos.x - s.x) < 30 && Math.abs(pos.y - s.y) < 30) {
+                    selectedScooter = s;
+                    s.isDragged = true;
+                    dragOffset.x = pos.x - s.x;
+                    dragOffset.y = pos.y - s.y;
+                    break;
+                }
+            }
+        };
+
+        const handleMove = (e) => {
+            if (!isPlaying || !selectedScooter) return;
+            const pos = getMousePos(e);
+            
+            // 限制拖曳範圍，不讓機車完全飛出畫面
+            selectedScooter.x = Math.max(50, Math.min(canvas.width - 50, pos.x - dragOffset.x));
+            selectedScooter.y = Math.max(100, Math.min(canvas.height - 120, pos.y - dragOffset.y));
+        };
+
+        const handleEnd = () => {
+            if (!selectedScooter) return;
+            selectedScooter.isDragged = false;
+            
+            // 判定拖曳落點屬於哪個分流慢車道
+            let closestLaneIdx = 0;
+            let minDist = Infinity;
+            for (let i = 0; i < 3; i++) {
+                const dist = Math.abs(selectedScooter.x - laneX[i]);
+                if (dist < minDist) {
+                    minDist = dist;
+                    closestLaneIdx = i;
+                }
+            }
+
+            // 吸附到最近的慢車道
+            selectedScooter.targetLane = closestLaneIdx;
+            selectedScooter.merged = true;
+            selectedScooter = null;
+        };
+
+        canvas.addEventListener('mousedown', handleStart);
+        canvas.addEventListener('mousemove', handleMove);
+        canvas.addEventListener('mouseup', handleEnd);
+
+        canvas.addEventListener('touchstart', handleStart);
+        canvas.addEventListener('touchmove', handleMove);
+        canvas.addEventListener('touchend', handleEnd);
+
+        function startTimer() {
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                if (!isPlaying) return;
+                timeLeft--;
+                timerLabel.innerText = `${timeLeft}s`;
+                if (timeLeft <= 0) {
+                    endGame();
+                }
+            }, 1000);
+        }
+
+        function updateHUD() {
+            scoreLabel.innerText = `${score} 輛`;
+            hpLabel.innerText = `${hp}%`;
+            if (hp < 30) {
+                hpLabel.className = "text-xl font-black text-red-500 animate-pulse";
+            } else if (hp < 65) {
+                hpLabel.className = "text-xl font-black text-yellow-500";
+            } else {
+                hpLabel.className = "text-xl font-black text-green-400";
+            }
+        }
+
+        function createScooter() {
+            const typeIdx = Math.floor(Math.random() * 3); // 0: 藍, 1: 綠, 2: 紅
+            return {
+                x: 150 + Math.random() * 300, // 從瀑布頂部橋面滑下
+                y: -40,
+                type: typeIdx, // 機車類型
+                speed: baseSpeed + Math.random() * 1.2,
+                isDragged: false,
+                merged: false,
+                targetLane: -1,
+                alpha: 1
+            };
+        }
+
+        function animate() {
+            if (!isPlaying) return;
+            frameCount++;
+
+            // 畫面晃動效果
+            ctx.save();
+            if (screenShake > 0) {
+                const dx = (Math.random() - 0.5) * screenShake;
+                const dy = (Math.random() - 0.5) * screenShake;
+                ctx.translate(dx, dy);
+                screenShake *= 0.9;
+            }
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 繪製背景：台北橋斜坡
+            ctx.fillStyle = '#1e1b4b'; // 暮色橋梁
+            ctx.beginPath();
+            ctx.moveTo(100, 0);
+            ctx.lineTo(500, 0);
+            ctx.lineTo(550, 280);
+            ctx.lineTo(50, 280);
+            ctx.closePath();
+            ctx.fill();
+
+            // 繪製慢車道隔離島與三車道 (底部區段)
+            ctx.fillStyle = '#111827';
+            ctx.fillRect(0, 280, canvas.width, canvas.height - 280);
+
+            // 畫出三個分流慢車道區塊
+            for (let i = 0; i < 3; i++) {
+                ctx.fillStyle = 'rgba(15, 23, 42, 0.6)';
+                ctx.fillRect(laneX[i] - 50, 310, 100, 110);
+                
+                // 霓虹邊框
+                ctx.strokeStyle = laneColors[i];
+                ctx.lineWidth = 3;
+                ctx.strokeRect(laneX[i] - 50, 310, 100, 110);
+
+                // 文字標示
+                ctx.fillStyle = laneColors[i];
+                ctx.font = 'bold 11px sans-serif';
+                ctx.fillText(laneNames[i].substring(0, 2), laneX[i] - 12, 335);
+                ctx.fillText('⬇️', laneX[i] - 7, 370);
+            }
+
+            // 機車流更新
+            if (frameCount % spawnInterval === 0) {
+                scooters.push(createScooter());
+                // 隨機按個喇叭
+                if (Math.random() > 0.6) AudioSynth.play('beep');
+            }
+
+            // 更新與繪製機車
+            for (let i = scooters.length - 1; i >= 0; i--) {
+                const s = scooters[i];
+
+                if (!s.isDragged) {
+                    if (!s.merged) {
+                        // 正常下滑
+                        s.y += s.speed;
+                    } else {
+                        // 已分流：快速歸位到指定慢車道，並滑過終點
+                        s.x += (laneX[s.targetLane] - s.x) * 0.15;
+                        s.y += s.speed * 1.5;
+                    }
+                }
+
+                // 繪製機車 🛵
+                ctx.save();
+                ctx.translate(s.x, s.y);
+                
+                // 外發光圈 (對應它應去的慢車道顏色)
+                ctx.shadowColor = laneColors[s.type];
+                ctx.shadowBlur = 15;
+
+                // 畫一個小氣球表示顏色標識
+                ctx.fillStyle = laneColors[s.type];
+                ctx.beginPath();
+                ctx.arc(0, -22, 6, 0, Math.PI*2);
+                ctx.fill();
+
+                ctx.font = '32px serif';
+                ctx.fillText('🛵', -16, 8);
+                ctx.restore();
+
+                // 判定：滑到合流點 (y = 310px) 的邏輯
+                if (s.y >= 310) {
+                    if (!s.merged) {
+                        // 玩家沒給它分流：隨機亂撞 (合流事故)
+                        AudioSynth.play('crash');
+                        hp -= 15;
+                        screenShake = 12;
+                        updateHUD();
+                        createCrashParticles(s.x, s.y, laneColors[s.type]);
+                        scooters.splice(i, 1);
+                        
+                        if (hp <= 0) endGame();
+                    } else {
+                        // 玩家有分流：檢查是否分流到「正確顏色慢車道」
+                        if (s.targetLane === s.type) {
+                            // 成功分流！
+                            AudioSynth.play('success');
+                            score++;
+                            updateHUD();
+                            createSuccessParticles(s.x, s.y, laneColors[s.type]);
+                        } else {
+                            // 分流錯誤追撞！
+                            AudioSynth.play('crash');
+                            hp -= 8;
+                            screenShake = 6;
+                            updateHUD();
+                            createCrashParticles(s.x, s.y, '#f97316');
+                        }
+                        scooters.splice(i, 1);
+                        if (hp <= 0) endGame();
+                    }
+                }
+            }
+
+            // 更新並繪製粒子
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.alpha -= 0.04;
+
+                ctx.save();
+                ctx.globalAlpha = p.alpha;
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+
+                if (p.alpha <= 0) {
+                    particles.splice(i, 1);
+                }
+            }
+
+            ctx.restore();
+            frameId = requestAnimationFrame(animate);
+        }
+
+        function createSuccessParticles(x, y, color) {
+            for (let i = 0; i < 8; i++) {
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: (Math.random() - 0.5) * 3,
+                    vy: -(1 + Math.random() * 3),
+                    size: 2 + Math.random() * 3,
+                    color: color,
+                    alpha: 1
+                });
+            }
+        }
+
+        function createCrashParticles(x, y, color) {
+            for (let i = 0; i < 15; i++) {
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: (Math.random() - 0.5) * 8,
+                    vy: (Math.random() - 0.5) * 8,
+                    size: 3 + Math.random() * 4,
+                    color: color,
+                    alpha: 1
+                });
+            }
+        }
+
+        function endGame() {
+            isPlaying = false;
+            cancelAnimationFrame(frameId);
+            clearInterval(timerInterval);
+
+            finalScore.innerText = `${score} 輛`;
+            
+            let comment = "加油！尖峰車流量大，分流需要極快眼力！🛵";
+            if (hp <= 0) {
+                comment = "大追撞！台北大橋交通全面癱瘓！🚑";
+            } else if (score >= 25) {
+                comment = "神級義交！道路合流極度順暢！🏆";
+            } else if (score >= 12) {
+                comment = "合格分流！下班的機車都安全回家了！👍";
+            }
+            finalComment.innerText = `評價：${comment}`;
+
+            finalScoreArea.classList.remove('hidden');
+            menuOverlay.classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>

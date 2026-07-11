@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>大稻埕中藥鋪抓藥秤 - Dadaocheng Herbal Scale</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            background-color: #171412;
+            color: #f7e3d4;
+            font-family: 'Noto Sans TC', sans-serif;
+            touch-action: manipulation;
+            overflow: hidden;
+        }
+        .glass {
+            background: rgba(43, 31, 23, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(217, 119, 6, 0.25);
+            border-radius: 20px;
+        }
+        .btn-wood {
+            background: linear-gradient(135deg, #78350f, #451a03);
+            color: #fef3c7;
+            font-weight: 900;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 2px solid #b45309;
+        }
+        .btn-wood:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(180, 83, 9, 0.35);
+        }
+        canvas {
+            display: block;
+            background: radial-gradient(circle at center, #2e1a0c 0%, #170b04 60%, #0c0502 100%);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.7);
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen p-4">
+
+    <!-- HUD -->
+    <div class="fixed top-4 left-4 right-4 flex justify-between gap-4 pointer-events-none z-10 max-w-lg mx-auto">
+        <!-- 抓藥分數 -->
+        <div class="glass px-4 py-2 flex items-center gap-3 pointer-events-auto">
+            <span class="text-2xl">🍯</span>
+            <div>
+                <div class="text-[9px] text-amber-400 font-black uppercase tracking-widest">抓藥評分</div>
+                <div id="scoreLabel" class="text-xl font-black text-amber-300">0 分</div>
+            </div>
+        </div>
+        <!-- 藥帖進度 -->
+        <div class="glass px-4 py-2 flex items-center gap-3 pointer-events-auto">
+            <span class="text-2xl">📋</span>
+            <div>
+                <div class="text-[9px] text-amber-400 font-black uppercase tracking-widest">抓藥進度</div>
+                <div id="recipeLabel" class="text-xl font-black text-amber-400">0/5 帖</div>
+            </div>
+        </div>
+        <!-- 剩餘時間 -->
+        <div class="glass px-4 py-2 flex items-center gap-3 pointer-events-auto">
+            <span class="text-2xl">⏳</span>
+            <div>
+                <div class="text-[9px] text-amber-400 font-black uppercase tracking-widest">剩餘時間</div>
+                <div id="timerLabel" class="text-xl font-black text-white">60s</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 遊戲主要區域 -->
+    <div class="w-full max-w-lg flex flex-col items-center gap-4 mt-16 relative">
+        
+        <!-- 當前藥方指示 -->
+        <div class="w-full bg-[#271c14] p-4 rounded-3xl border border-amber-800/40 text-center">
+            <span class="text-xs text-amber-500 font-black uppercase tracking-wider block">顧客要求藥方</span>
+            <div id="orderRequest" class="text-xl font-black text-amber-200 mt-1">枸杞: 20g</div>
+        </div>
+
+        <canvas id="gameCanvas" width="500" height="360" class="w-full rounded-3xl border-2 border-amber-700 shadow-2xl"></canvas>
+
+        <!-- 抓藥傾倒按鈕 (長按) -->
+        <button id="pourBtn" class="btn-wood w-full py-5 rounded-2xl text-xl shadow-lg select-none">
+            按住傾倒藥材 🥄
+        </button>
+
+        <div class="text-stone-400 text-xs text-center hidden md:block">
+            玩法：長按「傾倒按鈕」將藥材倒入秤盤。鬆開按鈕後，藥秤會上下擺動並 <span class="text-amber-500 font-bold">結算重量</span>，越接近目標克數得分越高！
+        </div>
+
+        <!-- 返回選單 -->
+        <button id="inGameResetBtn" class="glass px-4 py-2 text-xs font-bold text-amber-300 flex items-center gap-1 hover:text-white transition-colors">
+            <span>🏠 返回主選單</span>
+        </button>
+    </div>
+
+    <!-- 選單 Overlay -->
+    <div id="menuOverlay" class="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center z-50 p-6">
+        <div class="glass p-8 rounded-[32px] shadow-2xl max-w-sm w-full text-center border-2 border-amber-600/50">
+            <div class="text-6xl mb-4 animate-bounce">⚖️</div>
+            <h1 class="text-3xl font-black text-amber-400 mb-2">大稻埕中藥鋪抓藥秤</h1>
+            <p class="text-stone-300 text-xs mb-6 leading-relaxed">
+                在大稻埕百年中藥鋪裡，抓藥需要極度精準的手感！客人會開出藥方與指定重量。按住按鈕將藥材抖落至黃銅藥秤上，依靠肉眼判斷分量並放開按鈕。等藥秤擺動靜止後，就會公布實際重量，誤差越小評分越高！
+            </p>
+
+            <!-- 設定區 -->
+            <div class="space-y-4 mb-6 bg-amber-950/40 p-4 rounded-2xl border border-amber-600/20 text-left text-sm">
+                <div class="flex flex-col gap-1">
+                    <div class="flex justify-between font-bold text-amber-300">
+                        <span>抓藥時限</span>
+                        <span id="timeValue">60秒</span>
+                    </div>
+                    <input type="range" id="timeSetting" min="30" max="120" step="10" value="60" class="w-full h-1.5 bg-[#271c14] rounded-lg appearance-none cursor-pointer accent-amber-500">
+                </div>
+                <div class="flex flex-col gap-1">
+                    <div class="flex justify-between font-bold text-amber-300">
+                        <span>秤重容錯誤差</span>
+                        <span id="toleranceValue">±1.0g</span>
+                    </div>
+                    <input type="range" id="toleranceSetting" min="1" max="3" step="1" value="2" class="w-full h-1.5 bg-[#271c14] rounded-lg appearance-none cursor-pointer accent-amber-500">
+                </div>
+            </div>
+
+            <!-- 結算顯示 -->
+            <div id="finalScoreArea" class="hidden mb-6 p-4 bg-amber-500/10 rounded-2xl border border-amber-500/30">
+                <p class="text-amber-400 text-[10px] font-black tracking-wider uppercase mb-1">本次抓藥總分</p>
+                <p id="finalScore" class="text-4xl font-black text-amber-300">0 分</p>
+                <p id="finalComment" class="text-xs text-stone-300 font-bold mt-1">評價：抓藥新手</p>
+            </div>
+
+            <button id="startBtn" class="btn-wood w-full py-4 rounded-xl text-lg shadow-lg">
+                開始營業
+            </button>
+        </div>
+    </div>
+
+    <!-- Web Audio & Canvas 邏輯 -->
+    <script>
+        const AudioSynth = {
+            ctx: null,
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            },
+            play(type) {
+                this.init();
+                if (!this.ctx) return;
+                
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                if (type === 'drop') {
+                    // 藥材掉落沙沙聲 (低音正弦)
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(100, now);
+                    osc.frequency.setValueAtTime(120, now + 0.1);
+                    gain.gain.setValueAtTime(0.12, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                    osc.start(now);
+                    osc.stop(now + 0.1);
+                } else if (type === 'settle') {
+                    // 藥秤繩索嘎吱聲
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(200, now);
+                    osc.frequency.exponentialRampToValueAtTime(50, now + 0.35);
+                    gain.gain.setValueAtTime(0.08, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+                    osc.start(now);
+                    osc.stop(now + 0.35);
+                } else if (type === 'perfect') {
+                    // 完美重量
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(523.25, now); // C5
+                    osc.frequency.setValueAtTime(783.99, now + 0.1); // G5
+                    osc.frequency.setValueAtTime(1046.50, now + 0.2); // C6
+                    gain.gain.setValueAtTime(0.3, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+                    osc.start(now);
+                    osc.stop(now + 0.4);
+                } else if (type === 'good') {
+                    // 還算精準
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(523.25, now);
+                    osc.frequency.setValueAtTime(659.25, now + 0.12);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+                    osc.start(now);
+                    osc.stop(now + 0.25);
+                } else if (type === 'poor') {
+                    // 差太多
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(140, now);
+                    gain.gain.setValueAtTime(0.25, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                    osc.start(now);
+                    osc.stop(now + 0.3);
+                }
+            }
+        };
+
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreLabel = document.getElementById('scoreLabel');
+        const recipeLabel = document.getElementById('recipeLabel');
+        const timerLabel = document.getElementById('timerLabel');
+        const orderRequest = document.getElementById('orderRequest');
+
+        const menuOverlay = document.getElementById('menuOverlay');
+        const startBtn = document.getElementById('startBtn');
+        const timeSetting = document.getElementById('timeSetting');
+        const toleranceSetting = document.getElementById('toleranceSetting');
+        const timeValueDisplay = document.getElementById('timeValue');
+        const toleranceValueDisplay = document.getElementById('toleranceValue');
+
+        const finalScoreArea = document.getElementById('finalScoreArea');
+        const finalScore = document.getElementById('finalScore');
+        const finalComment = document.getElementById('finalComment');
+        const inGameResetBtn = document.getElementById('inGameResetBtn');
+
+        const pourBtn = document.getElementById('pourBtn');
+
+        const toleranceValues = [0.5, 1.0, 2.0]; // 單位g
+        toleranceSetting.oninput = () => toleranceValueDisplay.innerText = `±${toleranceValues[toleranceSetting.value - 1].toFixed(1)}g`;
+        timeSetting.oninput = () => timeValueDisplay.innerText = `${timeSetting.value}秒`;
+
+        let isPlaying = false;
+        let score = 0;
+        let recipeIndex = 0;
+        const totalRecipes = 5;
+        let timeLeft = 60;
+        let timerInterval = null;
+        let frameId;
+
+        // 藥方管理
+        const herbTypes = [
+            { name: '枸杞', color: '#ef4444', emoji: '🍒', baseWeight: 0.15 },
+            { name: '人參', color: '#f59e0b', emoji: '🪵', baseWeight: 0.35 },
+            { name: '甘草', color: '#78350f', emoji: '🪙', baseWeight: 0.22 },
+            { name: '當歸', color: '#b45309', emoji: '🍂', baseWeight: 0.40 }
+        ];
+
+        let currentHerb = null;
+        let targetWeight = 20; // 目標克數 (g)
+        let pouredWeight = 0; // 倒出克數 (g)
+        let toleranceMargin = 1.0;
+
+        let isPouring = false;
+        let isSettling = false;
+        let settleTimer = 0;
+
+        // 藥秤物理模擬 (Spring Damped System)
+        // x = 0 (水平平衡)
+        let beamAngle = 0; // 傾斜弧度
+        let beamVelocity = 0;
+        let scaleSettleScore = 0; // 穩定度計時器
+
+        let herbs = []; // 傾倒下落的藥材粒子
+        let bowlHerbs = []; // 已經落在盤子裡的藥材
+
+        startBtn.onclick = () => {
+            AudioSynth.init();
+            score = 0;
+            recipeIndex = 0;
+            timeLeft = parseInt(timeSetting.value);
+            toleranceMargin = toleranceValues[parseInt(toleranceSetting.value) - 1];
+
+            isPlaying = true;
+            isPouring = false;
+            isSettling = false;
+            herbs = [];
+            bowlHerbs = [];
+            beamAngle = 0;
+            beamVelocity = 0;
+
+            menuOverlay.classList.add('hidden');
+            updateHUD();
+            nextRecipe();
+            startTimer();
+            animate();
+        };
+
+        inGameResetBtn.onclick = () => {
+            endGame();
+        };
+
+        // 按鈕長按
+        const startPour = (e) => {
+            if (!isPlaying || isSettling) return;
+            isPouring = true;
+            e.preventDefault();
+        };
+
+        const stopPour = (e) => {
+            if (!isPlaying || !isPouring) return;
+            isPouring = false;
+            isSettling = true;
+            settleTimer = 100; // 等待秤重平衡擺動 100 幀
+            AudioSynth.play('settle');
+            e.preventDefault();
+        };
+
+        pourBtn.addEventListener('mousedown', startPour);
+        pourBtn.addEventListener('mouseup', stopPour);
+        pourBtn.addEventListener('mouseleave', stopPour);
+        
+        pourBtn.addEventListener('touchstart', startPour);
+        pourBtn.addEventListener('touchend', stopPour);
+
+        function startTimer() {
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                if (!isPlaying) return;
+                timeLeft--;
+                timerLabel.innerText = `${timeLeft}s`;
+                if (timeLeft <= 0) {
+                    endGame();
+                }
+            }, 1000);
+        }
+
+        function updateHUD() {
+            scoreLabel.innerText = `${score} 分`;
+            recipeLabel.innerText = `${recipeIndex}/${totalRecipes} 帖`;
+        }
+
+        function nextRecipe() {
+            if (recipeIndex >= totalRecipes) {
+                setTimeout(endGame, 1000);
+                return;
+            }
+
+            recipeIndex++;
+            updateHUD();
+
+            // 隨機選一個藥材與目標重量
+            currentHerb = herbTypes[Math.floor(Math.random() * herbTypes.length)];
+            targetWeight = 10 + Math.floor(Math.random() * 25); // 10g ~ 35g
+
+            pouredWeight = 0;
+            isPouring = false;
+            isSettling = false;
+            herbs = [];
+            bowlHerbs = [];
+            beamAngle = 0;
+            beamVelocity = 0;
+
+            orderRequest.innerText = `${currentHerb.name} : ${targetWeight}g`;
+            pourBtn.disabled = false;
+            pourBtn.innerText = "按住傾倒藥材 🥄";
+        }
+
+        function animate() {
+            if (!isPlaying) return;
+
+            // 1. 物理更新
+            // 計算藥秤傾角：一邊是砝碼 (固定重量對應目標重量)，另一邊是倒入的藥材
+            const targetForce = targetWeight * 0.05;
+            const pouredForce = pouredWeight * 0.05;
+            
+            // 力矩公式差值 (藥材在右側，重力朝下 -> 使角度增加；砝碼在左側，使角度減少)
+            const torque = pouredForce - targetForce;
+            
+            // 彈簧回歸力與阻尼
+            const springK = 0.03;
+            const damping = 0.94;
+            const gravityRestitution = -springK * beamAngle;
+
+            beamVelocity += (torque * 0.005 + gravityRestitution);
+            beamVelocity *= damping;
+            beamAngle += beamVelocity;
+
+            // 限制最大傾斜角度
+            if (beamAngle > 0.4) beamAngle = 0.4;
+            if (beamAngle < -0.4) beamAngle = -0.4;
+
+            // 更新傾倒藥材
+            if (isPouring) {
+                // 每幀產出 1~3 顆顆粒
+                const spawnCount = 1 + Math.floor(Math.random() * 2);
+                for (let i = 0; i < spawnCount; i++) {
+                    herbs.push({
+                        x: 350 + (Math.random() - 0.5) * 15,
+                        y: 80,
+                        vy: 2 + Math.random() * 4,
+                        vx: -1 + Math.random() * 2,
+                        size: 3 + Math.random() * 3
+                    });
+                }
+                
+                // 累積重量 (加載藥材基本重量)
+                pouredWeight += currentHerb.baseWeight * spawnCount;
+                if (Math.random() > 0.6) AudioSynth.play('drop');
+            }
+
+            // 更新下落粒子
+            // 盤子的動態中心位置 Y
+            // 盤子掛在右臂 (X: 380px)
+            const rightArmX = 380;
+            const rightArmY = 160 + Math.sin(beamAngle) * 130;
+
+            for (let i = herbs.length - 1; i >= 0; i--) {
+                const h = herbs[i];
+                h.y += h.vy;
+                h.x += h.vx;
+
+                // 是否落入右側秤盤 (Y軸在秤盤高度)
+                if (h.y >= rightArmY + 30 && Math.abs(h.x - rightArmX) < 45) {
+                    // 落入盤中
+                    bowlHerbs.push({
+                        rx: h.x - rightArmX, // 記錄相對盤子的X座標，隨盤子晃動
+                        ry: 30 + (Math.random() - 0.5) * 6,
+                        size: h.size
+                    });
+                    herbs.splice(i, 1);
+                } else if (h.y > canvas.height) {
+                    // 掉到外面
+                    herbs.splice(i, 1);
+                }
+            }
+
+            // 2. 繪製畫面
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 繪製背景：藥櫃裝飾 (用格子暗線表示藥斗)
+            ctx.strokeStyle = 'rgba(217, 119, 6, 0.08)';
+            ctx.lineWidth = 1;
+            for(let gx = 0; gx < canvas.width; gx += 50) {
+                ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, canvas.height); ctx.stroke();
+            }
+            for(let gy = 0; gy < canvas.height; gy += 40) {
+                ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(canvas.width, gy); ctx.stroke();
+            }
+
+            // 繪製藥秤立柱與懸吊點
+            // 立柱中心 (X: 250px, Y: 60px)
+            ctx.strokeStyle = '#d97706';
+            ctx.lineWidth = 6;
+            ctx.beginPath();
+            ctx.moveTo(250, 40);
+            ctx.lineTo(250, 160);
+            ctx.stroke();
+
+            // 繪製秤骨 (橫樑)
+            ctx.save();
+            ctx.translate(250, 160);
+            ctx.rotate(beamAngle);
+            ctx.strokeStyle = '#f59e0b';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(-130, 0);
+            ctx.lineTo(130, 0);
+            ctx.stroke();
+
+            // 繪製中央指針
+            ctx.fillStyle = '#b45309';
+            ctx.beginPath();
+            ctx.moveTo(-5, 0);
+            ctx.lineTo(0, -30);
+            ctx.lineTo(5, 0);
+            ctx.closePath();
+            ctx.fill();
+
+            // 左懸吊點 (-130, 0) -> 左秤盤
+            // 右懸吊點 (130, 0) -> 右秤盤
+            ctx.restore();
+
+            // 重新計算傾斜後的端點世界座標
+            const leftArmX = 250 - Math.cos(beamAngle) * 130;
+            const leftArmY = 160 - Math.sin(beamAngle) * 130;
+
+            const rightArmWorldX = 250 + Math.cos(beamAngle) * 130;
+            const rightArmWorldY = 160 + Math.sin(beamAngle) * 130;
+
+            // 繪製左吊線與左盤 (砝碼盤)
+            ctx.strokeStyle = '#b45309';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(leftArmX, leftArmY);
+            ctx.lineTo(leftArmX - 25, leftArmY + 50);
+            ctx.moveTo(leftArmX, leftArmY);
+            ctx.lineTo(leftArmX + 25, leftArmY + 50);
+            ctx.stroke();
+
+            // 左秤盤
+            ctx.fillStyle = '#78350f';
+            ctx.beginPath();
+            ctx.ellipse(leftArmX, leftArmY + 50, 30, 8, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // 左盤砝碼 (顯示一個大銅鐵，刻著目標克數)
+            ctx.fillStyle = '#d97706';
+            ctx.fillRect(leftArmX - 8, leftArmY + 38, 16, 12);
+            ctx.fillStyle = '#000';
+            ctx.font = 'bold 8px sans-serif';
+            ctx.fillText(`${targetWeight}g`, leftArmX - 6, leftArmY + 47);
+
+            // 繪製右吊線與右盤 (藥材盤)
+            ctx.strokeStyle = '#b45309';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(rightArmWorldX, rightArmWorldY);
+            ctx.lineTo(rightArmWorldX - 25, rightArmWorldY + 50);
+            ctx.moveTo(rightArmWorldX, rightArmWorldY);
+            ctx.lineTo(rightArmWorldX + 25, rightArmWorldY + 50);
+            ctx.stroke();
+
+            // 右秤盤
+            ctx.fillStyle = '#78350f';
+            ctx.beginPath();
+            ctx.ellipse(rightArmWorldX, rightArmWorldY + 50, 30, 8, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // 繪製碗中藥材顆粒 (隨盤子世界座標更新)
+            bowlHerbs.forEach(b => {
+                ctx.fillStyle = currentHerb.color;
+                ctx.beginPath();
+                ctx.arc(rightArmWorldX + b.rx, rightArmWorldY + 15 + b.ry, b.size, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // 繪製落下的藥材粒子
+            herbs.forEach(h => {
+                ctx.fillStyle = currentHerb.color;
+                ctx.beginPath();
+                ctx.arc(h.x, h.y, h.size, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // 繪製傾倒的藥勺
+            ctx.save();
+            ctx.translate(350, 60);
+            if (isPouring) ctx.rotate(-0.3);
+            ctx.fillStyle = '#b45309';
+            // 藥勺形狀
+            ctx.fillRect(0, -6, 40, 8); // 勺柄
+            ctx.beginPath();
+            ctx.arc(0, 0, 14, 0, Math.PI * 2); // 勺斗
+            ctx.fill();
+            ctx.restore();
+
+            // 結算判定
+            if (isSettling) {
+                settleTimer--;
+                
+                ctx.fillStyle = 'rgba(251, 191, 36, 0.8)';
+                ctx.font = 'bold 13px sans-serif';
+                ctx.fillText(`藥秤平衡中... ${Math.ceil(settleTimer / 20)}`, 200, 300);
+
+                if (settleTimer <= 0) {
+                    isSettling = false;
+                    evaluateWeight();
+                }
+            }
+
+            frameId = requestAnimationFrame(animate);
+        }
+
+        // 重量評估
+        function evaluateWeight() {
+            pourBtn.disabled = true;
+
+            const diff = Math.abs(pouredWeight - targetWeight);
+            let earnedScore = 0;
+            let resultText = '';
+
+            if (diff <= toleranceMargin) {
+                // 完美
+                AudioSynth.play('perfect');
+                earnedScore = 100;
+                resultText = `太準了！實際重量: ${pouredWeight.toFixed(1)}g (誤差 ${diff.toFixed(1)}g)。完美！+100分`;
+                createShatterParticles(250, 200, '#fbbf24');
+            } else if (diff <= toleranceMargin * 2.5) {
+                // 良好
+                AudioSynth.play('good');
+                earnedScore = 50;
+                resultText = `相當不錯！實際重量: ${pouredWeight.toFixed(1)}g (誤差 ${diff.toFixed(1)}g)。+50分`;
+                createShatterParticles(250, 200, '#eab308');
+            } else {
+                // 差太多
+                AudioSynth.play('poor');
+                earnedScore = 10;
+                resultText = `手抖了！實際重量: ${pouredWeight.toFixed(1)}g (誤差 ${diff.toFixed(1)}g)。+10分`;
+            }
+
+            score += earnedScore;
+            updateHUD();
+
+            orderRequest.innerText = resultText;
+            pourBtn.innerText = "正在打包藥材...";
+
+            setTimeout(() => {
+                if (isPlaying) {
+                    nextRecipe();
+                }
+            }, 3000);
+        }
+
+        function createShatterParticles(x, y, color) {
+            for (let i = 0; i < 15; i++) {
+                herbs.push({
+                    x: x,
+                    y: y,
+                    vx: (Math.random() - 0.5) * 6,
+                    vy: -2 - Math.random() * 4,
+                    size: 3 + Math.random() * 3
+                });
+            }
+        }
+
+        function endGame() {
+            isPlaying = false;
+            cancelAnimationFrame(frameId);
+            clearInterval(timerInterval);
+
+            finalScore.innerText = `${score} 分`;
+            
+            let comment = "有潛力！多來大稻埕練習抓藥秤重！🍯";
+            if (score >= 400) {
+                comment = "神手掌櫃！百年中藥鋪黃金秤傳人！🏆";
+            } else if (score >= 200) {
+                comment = "稱職抓藥師！分毫不差的抓藥手感！👍";
+            }
+            finalComment.innerText = `評價：${comment}`;
+
+            finalScoreArea.classList.remove('hidden');
+            menuOverlay.classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>平溪天燈祈福飛行 - Pingxi Sky Lantern</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            background-color: #050510;
+            color: #fed7aa;
+            font-family: 'Noto Sans TC', sans-serif;
+            touch-action: none;
+            overflow: hidden;
+        }
+        .glass {
+            background: rgba(13, 13, 35, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(251, 146, 60, 0.25);
+            border-radius: 20px;
+        }
+        .btn-fire {
+            background: linear-gradient(135deg, #f97316, #ea580c);
+            color: #ffffff;
+            font-weight: 900;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 2px solid #ffedd5;
+        }
+        .btn-fire:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(249, 115, 22, 0.35);
+        }
+        canvas {
+            display: block;
+            background: linear-gradient(to top, #020617 0%, #030712 50%, #090514 100%);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.7);
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen p-4">
+
+    <!-- HUD -->
+    <div class="fixed top-4 left-4 right-4 flex justify-between gap-4 pointer-events-none z-10 max-w-lg mx-auto">
+        <!-- 許願星 -->
+        <div class="glass px-4 py-2 flex items-center gap-3 pointer-events-auto">
+            <span class="text-2xl">🏮</span>
+            <div>
+                <div class="text-[9px] text-orange-400 font-black uppercase tracking-widest">放飛心願</div>
+                <div id="scoreLabel" class="text-xl font-black text-orange-300">0 個</div>
+            </div>
+        </div>
+        <!-- 熱氣/燃料 -->
+        <div class="glass px-4 py-2 flex items-center gap-3 pointer-events-auto">
+            <span class="text-2xl">🔥</span>
+            <div>
+                <div class="text-[9px] text-orange-400 font-black uppercase tracking-widest">天燈熱能</div>
+                <div id="fuelLabel" class="text-xl font-black text-yellow-300">100%</div>
+            </div>
+        </div>
+        <!-- 高度 -->
+        <div class="glass px-4 py-2 flex items-center gap-3 pointer-events-auto">
+            <span class="text-2xl">☁️</span>
+            <div>
+                <div class="text-[9px] text-orange-400 font-black uppercase tracking-widest">飛行高度</div>
+                <div id="altLabel" class="text-xl font-black text-white">0 m</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 遊戲主要區域 -->
+    <div class="w-full max-w-md flex flex-col items-center gap-4 relative">
+        
+        <canvas id="gameCanvas" width="400" height="500" class="w-full rounded-3xl border-2 border-orange-500 shadow-2xl"></canvas>
+
+        <!-- 左右轉虛擬按鍵 -->
+        <div class="flex gap-4 w-full">
+            <button id="btnLeft" class="btn-fire flex-1 py-4 rounded-xl text-lg shadow-lg select-none">◀ 往左移</button>
+            <button id="btnRight" class="btn-fire flex-1 py-4 rounded-xl text-lg shadow-lg select-none">往右移 ▶</button>
+        </div>
+
+        <div class="text-slate-400 text-xs text-center hidden md:block">
+            操作指示：使用鍵盤 <span class="text-orange-400 font-bold">◀ / ▶</span> 鍵或點擊按鈕，推動天燈避開障礙，點燃祈福火花！
+        </div>
+
+        <!-- 返回選單 -->
+        <button id="inGameResetBtn" class="glass px-4 py-2 text-xs font-bold text-orange-300 flex items-center gap-1 hover:text-white transition-colors">
+            <span>🏠 返回主選單</span>
+        </button>
+    </div>
+
+    <!-- 選單 Overlay -->
+    <div id="menuOverlay" class="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center z-50 p-6">
+        <div class="glass p-8 rounded-[32px] shadow-2xl max-w-sm w-full text-center border-2 border-orange-500/50">
+            <div class="text-6xl mb-4 animate-bounce">🏮</div>
+            <h1 class="text-3xl font-black text-orange-400 mb-2">平溪天燈祈福飛行</h1>
+            <p class="text-stone-300 text-xs mb-6 leading-relaxed">
+                在繁星點點的平溪山城夜空，點亮寫滿祝福的天燈！天燈會隨著熱氣緩緩升空，但空中會刮起無規律的強風。按下左/右按鈕為天燈注入轉向推力，一邊收集寫著祝願的「福氣光團」，一邊小心避開高壓電線、樹梢和飛鳥！
+            </p>
+
+            <!-- 設定區 -->
+            <div class="space-y-4 mb-6 bg-slate-950/60 p-4 rounded-2xl border border-orange-500/20 text-left text-sm">
+                <div class="flex flex-col gap-1">
+                    <div class="flex justify-between font-bold text-orange-300">
+                        <span>夜空風力強度</span>
+                        <span id="windValue">微風</span>
+                    </div>
+                    <input type="range" id="windSetting" min="1" max="3" step="1" value="2" class="w-full h-1.5 bg-slate-900 rounded-lg appearance-none cursor-pointer accent-orange-500">
+                </div>
+                <div class="flex flex-col gap-1">
+                    <div class="flex justify-between font-bold text-orange-300">
+                        <span>高壓線障礙密度</span>
+                        <span id="densityValue">普通</span>
+                    </div>
+                    <input type="range" id="densitySetting" min="1" max="3" step="1" value="2" class="w-full h-1.5 bg-slate-900 rounded-lg appearance-none cursor-pointer accent-orange-500">
+                </div>
+            </div>
+
+            <!-- 結算顯示 -->
+            <div id="finalScoreArea" class="hidden mb-6 p-4 bg-orange-500/10 rounded-2xl border border-orange-500/30">
+                <p class="text-orange-400 text-[10px] font-black tracking-wider uppercase mb-1">本次飛行收集祝願</p>
+                <p id="finalScore" class="text-4xl font-black text-orange-300">0 個</p>
+                <p id="finalAlt" class="text-xs text-orange-400 font-bold mt-1">最大高度：0 m</p>
+            </div>
+
+            <button id="startBtn" class="btn-fire w-full py-4 rounded-xl text-lg shadow-lg">
+                放飛天燈
+            </button>
+        </div>
+    </div>
+
+    <!-- Web Audio & Canvas 邏輯 -->
+    <script>
+        const AudioSynth = {
+            ctx: null,
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            },
+            play(type) {
+                this.init();
+                if (!this.ctx) return;
+                
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                if (type === 'thrust') {
+                    // 熱氣火焰噴射
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(140, now);
+                    osc.frequency.exponentialRampToValueAtTime(280, now + 0.12);
+                    gain.gain.setValueAtTime(0.25, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+                    osc.start(now);
+                    osc.stop(now + 0.12);
+                } else if (type === 'collect') {
+                    // 收集許願星 (清脆高音)
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(880, now); // A5
+                    osc.frequency.setValueAtTime(1174.66, now + 0.08); // D6
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+                    osc.start(now);
+                    osc.stop(now + 0.25);
+                } else if (type === 'zap') {
+                    // 撞擊高壓線或樹木 (觸電滋滋聲)
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(180, now);
+                    osc.frequency.linearRampToValueAtTime(60, now + 0.3);
+                    gain.gain.setValueAtTime(0.4, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                    osc.start(now);
+                    osc.stop(now + 0.3);
+                }
+            }
+        };
+
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreLabel = document.getElementById('scoreLabel');
+        const fuelLabel = document.getElementById('fuelLabel');
+        const altLabel = document.getElementById('altLabel');
+
+        const menuOverlay = document.getElementById('menuOverlay');
+        const startBtn = document.getElementById('startBtn');
+        const windSetting = document.getElementById('windSetting');
+        const densitySetting = document.getElementById('densitySetting');
+        const windValueDisplay = document.getElementById('windValue');
+        const densityValueDisplay = document.getElementById('densityValue');
+
+        const finalScoreArea = document.getElementById('finalScoreArea');
+        const finalScore = document.getElementById('finalScore');
+        const finalAlt = document.getElementById('finalAlt');
+        const inGameResetBtn = document.getElementById('inGameResetBtn');
+
+        const btnLeft = document.getElementById('btnLeft');
+        const btnRight = document.getElementById('btnRight');
+
+        const windNames = ["微風", "普通風力", "狂野烈風"];
+        const densityNames = ["空曠夜空", "標準線路", "滿天電線"];
+
+        windSetting.oninput = () => windValueDisplay.innerText = windNames[windSetting.value - 1];
+        densitySetting.oninput = () => densityValueDisplay.innerText = densityNames[densitySetting.value - 1];
+
+        let isPlaying = false;
+        let wishes = 0;
+        let fuel = 100;
+        let altitude = 0;
+        let frameId;
+
+        // 天燈物理
+        let lanternX = 200;
+        let lanternY = 380;
+        let lanternVX = 0;
+        let lanternVY = 0;
+        const lanternWidth = 30;
+
+        let windForce = 0;
+        let targetWind = 0;
+        let windChangeTimer = 0;
+        let maxWind = 0.5;
+
+        let obstacles = [];
+        let items = [];
+        let stars = []; // 背景小星星
+        let bgLanterns = []; // 遠景飄動天燈
+        let particles = [];
+        let frameCount = 0;
+        let spawnInterval = 100;
+
+        startBtn.onclick = () => {
+            AudioSynth.init();
+            wishes = 0;
+            fuel = 100;
+            altitude = 0;
+
+            const wSet = parseInt(windSetting.value);
+            maxWind = wSet === 1 ? 0.3 : wSet === 2 ? 0.6 : 1.1;
+
+            const dSet = parseInt(densitySetting.value);
+            spawnInterval = dSet === 1 ? 140 : dSet === 2 ? 90 : 50;
+
+            lanternX = 200;
+            lanternY = 380;
+            lanternVX = 0;
+            lanternVY = 0;
+
+            obstacles = [];
+            items = [];
+            particles = [];
+            
+            // 預先生成背景星星
+            stars = [];
+            for (let i = 0; i < 40; i++) {
+                stars.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    size: 0.5 + Math.random() * 1.5,
+                    blinkSpeed: 0.02 + Math.random() * 0.03,
+                    alpha: Math.random()
+                });
+            }
+
+            // 預先生成遠景天燈
+            bgLanterns = [];
+            for (let i = 0; i < 8; i++) {
+                bgLanterns.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    vy: -(0.2 + Math.random() * 0.4),
+                    size: 8 + Math.random() * 10
+                });
+            }
+
+            isPlaying = true;
+            updateHUD();
+            animate();
+        };
+
+        inGameResetBtn.onclick = () => {
+            endGame();
+        };
+
+        // 按鍵監聽
+        let keys = {};
+        window.addEventListener('keydown', e => { keys[e.key] = true; });
+        window.addEventListener('keyup', e => { keys[e.key] = false; });
+
+        btnLeft.onclick = () => steer(-1);
+        btnRight.onclick = () => steer(1);
+
+        function steer(dir) {
+            if (!isPlaying || fuel <= 0) return;
+            lanternVX += dir * 0.8;
+            fuel = Math.max(0, fuel - 3);
+            updateHUD();
+            AudioSynth.play('thrust');
+
+            // 推進器火焰粒子 (朝反方向)
+            for (let i = 0; i < 5; i++) {
+                particles.push({
+                    x: lanternX + (dir > 0 ? -12 : 12),
+                    y: lanternY + 15,
+                    vx: -dir * (2 + Math.random() * 3),
+                    vy: 1 + Math.random() * 2,
+                    size: 3 + Math.random() * 3,
+                    color: '#f97316',
+                    alpha: 1
+                });
+            }
+        }
+
+        function updateHUD() {
+            scoreLabel.innerText = `${wishes} 個`;
+            fuelLabel.innerText = `${Math.floor(fuel)}%`;
+            altLabel.innerText = `${Math.floor(altitude)} m`;
+
+            if (fuel < 30) {
+                fuelLabel.className = "text-xl font-black text-red-500 animate-pulse";
+            } else {
+                fuelLabel.className = "text-xl font-black text-yellow-350";
+            }
+        }
+
+        function animate() {
+            if (!isPlaying) return;
+            frameCount++;
+            
+            // 燃料隨時間微弱消耗 (天燈本身維持升空)
+            fuel = Math.max(0, fuel - 0.08);
+            if (fuel <= 0) {
+                // 熱能耗盡，天燈墜落
+                lanternVY += 0.15;
+            }
+
+            // 更新高度
+            if (fuel > 0) {
+                altitude += 0.25;
+            } else {
+                altitude = Math.max(0, altitude - 0.4);
+            }
+
+            // 鍵盤控制轉向
+            if (keys['ArrowLeft']) steer(-0.5);
+            if (keys['ArrowRight']) steer(0.5);
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 1. 更新風向力
+            windChangeTimer++;
+            if (windChangeTimer > 150) {
+                windChangeTimer = 0;
+                targetWind = (Math.random() - 0.5) * maxWind;
+            }
+            windForce += (targetWind - windForce) * 0.03;
+
+            // 2. 物理更新天燈
+            lanternVX += windForce * 0.1;
+            lanternX += lanternVX;
+            lanternY += lanternVY;
+            
+            // 阻尼
+            lanternVX *= 0.95;
+
+            // 邊界防禦
+            if (lanternX < 20) { lanternX = 20; lanternVX *= -0.5; }
+            if (lanternX > canvas.width - 20) { lanternX = canvas.width - 20; lanternVX *= -0.5; }
+
+            // 墜毀判定 (如果燃料為0且跌落到底部)
+            if (fuel <= 0 && lanternY > canvas.height - 20) {
+                endGame();
+                return;
+            }
+
+            // 3. 繪製背景： twinkle 小星星與飄動天燈
+            stars.forEach(s => {
+                s.alpha += s.blinkSpeed;
+                if (s.alpha > 1 || s.alpha < 0) s.blinkSpeed = -s.blinkSpeed;
+                ctx.fillStyle = `rgba(254, 240, 138, ${Math.max(0.1, s.alpha)})`;
+                ctx.fillRect(s.x, s.y, s.size, s.size);
+            });
+
+            // 遠景天燈
+            bgLanterns.forEach(bl => {
+                bl.y += bl.vy;
+                if (bl.y < -30) {
+                    bl.y = canvas.height + 30;
+                    bl.x = Math.random() * canvas.width;
+                }
+                ctx.fillStyle = 'rgba(251, 146, 60, 0.25)';
+                ctx.beginPath();
+                ctx.moveTo(bl.x - bl.size/2, bl.y);
+                ctx.lineTo(bl.x + bl.size/2, bl.y);
+                ctx.lineTo(bl.x + bl.size/3, bl.y - bl.size);
+                ctx.lineTo(bl.x - bl.size/3, bl.y - bl.size);
+                ctx.closePath();
+                ctx.fill();
+            });
+
+            // 4. 生成空中元素 (向下滑落模擬上升)
+            const speedScale = fuel > 0 ? 3 : 1;
+            if (frameCount % spawnInterval === 0) {
+                // 生成障礙 (高壓電線 ⚡ 或 樹枝 🪵)
+                const isWire = Math.random() > 0.4;
+                obstacles.push({
+                    x: isWire ? 0 : Math.random() * canvas.width,
+                    y: -40,
+                    type: isWire ? 'wire' : 'branch',
+                    length: isWire ? canvas.width : 50 + Math.random() * 80
+                });
+            }
+
+            if (frameCount % 60 === 0) {
+                // 生成祝福光團 🌟
+                items.push({
+                    x: 30 + Math.random() * (canvas.width - 60),
+                    y: -20,
+                    size: 15
+                });
+            }
+
+            // 5. 更新與繪製障礙
+            for (let i = obstacles.length - 1; i >= 0; i--) {
+                const obs = obstacles[i];
+                obs.y += speedScale; // 障礙向下飄移
+
+                ctx.save();
+                if (obs.type === 'wire') {
+                    // 電線
+                    ctx.strokeStyle = '#ef4444';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(0, obs.y);
+                    ctx.lineTo(canvas.width, obs.y);
+                    ctx.stroke();
+                    
+                    // 電閃警告字樣
+                    ctx.fillStyle = 'rgba(239, 68, 68, 0.4)';
+                    ctx.font = '9px sans-serif';
+                    ctx.fillText('⚡ 高壓電線 ⚡', 20, obs.y - 4);
+                } else {
+                    // 樹梢/鳥
+                    ctx.fillStyle = '#166534';
+                    ctx.fillRect(obs.x, obs.y, obs.length, 12);
+                }
+                ctx.restore();
+
+                // 碰撞檢測 (天燈)
+                if (obs.type === 'wire') {
+                    if (Math.abs(lanternY - obs.y) < 15) {
+                        AudioSynth.play('zap');
+                        fuel = Math.max(0, fuel - 25);
+                        updateHUD();
+                        createCrashExplosion(lanternX, obs.y, '#ef4444');
+                        obstacles.splice(i, 1);
+                        continue;
+                    }
+                } else {
+                    if (lanternX >= obs.x && lanternX <= obs.x + obs.length && Math.abs(lanternY - obs.y) < 18) {
+                        AudioSynth.play('zap');
+                        fuel = Math.max(0, fuel - 15);
+                        updateHUD();
+                        createCrashExplosion(lanternX, obs.y, '#f59e0b');
+                        obstacles.splice(i, 1);
+                        continue;
+                    }
+                }
+
+                if (obs.y > canvas.height + 40) obstacles.splice(i, 1);
+            }
+
+            // 6. 更新與繪製祝福光團
+            for (let i = items.length - 1; i >= 0; i--) {
+                const item = items[i];
+                item.y += speedScale;
+
+                ctx.save();
+                // 祝福星星
+                ctx.fillStyle = '#facc15';
+                ctx.shadowColor = '#eab308';
+                ctx.shadowBlur = 15;
+                ctx.font = '22px serif';
+                ctx.fillText('🌟', item.x - 11, item.y + 7);
+                ctx.restore();
+
+                // 碰撞判定
+                if (Math.abs(lanternX - item.x) < 22 && Math.abs(lanternY - item.y) < 22) {
+                    AudioSynth.play('collect');
+                    wishes++;
+                    fuel = Math.min(100, fuel + 15); // 收集祈福加燃料
+                    updateHUD();
+                    createCrashExplosion(item.x, item.y, '#facc15');
+                    items.splice(i, 1);
+                    continue;
+                }
+
+                if (item.y > canvas.height + 20) items.splice(i, 1);
+            }
+
+            // 7. 繪製主角天燈 🏮
+            ctx.save();
+            ctx.translate(lanternX, lanternY);
+            
+            // 天燈暖光
+            ctx.shadowColor = '#f97316';
+            ctx.shadowBlur = fuel > 0 ? 25 : 5;
+
+            // 天燈紙罩 (上寬下窄)
+            ctx.fillStyle = '#ef4444';
+            ctx.beginPath();
+            ctx.moveTo(-15, 12);
+            ctx.lineTo(15, 12);
+            ctx.lineTo(20, -18);
+            ctx.lineTo(-20, -18);
+            ctx.closePath();
+            ctx.fill();
+
+            // 天燈底部開口與底圈
+            ctx.fillStyle = '#f59e0b';
+            ctx.fillRect(-15, 12, 30, 3);
+
+            // 點燃的底焰 (跳動火焰)
+            if (fuel > 0) {
+                const flameH = 8 + Math.random() * 8;
+                ctx.fillStyle = '#fbbf24';
+                ctx.beginPath();
+                ctx.moveTo(-5, 15);
+                ctx.quadraticCurveTo(0, 15 + flameH, 5, 15);
+                ctx.closePath();
+                ctx.fill();
+            }
+
+            // 在天燈上寫個小字
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 9px sans-serif';
+            ctx.fillText('福', -4, -2);
+
+            ctx.restore();
+
+            // 8. 繪製轉向推進粒子
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.alpha -= 0.05;
+
+                ctx.save();
+                ctx.globalAlpha = p.alpha;
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+
+                if (p.alpha <= 0) particles.splice(i, 1);
+            }
+
+            // 繪製風向標誌 (畫布右上角)
+            drawWindIndicator();
+
+            updateHUD();
+            frameId = requestAnimationFrame(animate);
+        }
+
+        function drawWindIndicator() {
+            ctx.save();
+            ctx.translate(canvas.width - 45, 65);
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.6)';
+            ctx.beginPath();
+            ctx.arc(0, 0, 20, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 指針隨 windForce 擺動
+            ctx.strokeStyle = '#38bdf8';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(windForce * 40, 0); // 橫向吹拂強度
+            ctx.stroke();
+
+            ctx.fillStyle = '#38bdf8';
+            ctx.font = 'bold 8px sans-serif';
+            ctx.fillText('風', -4, -6);
+            ctx.restore();
+        }
+
+        function createCrashExplosion(x, y, color) {
+            for (let i = 0; i < 8; i++) {
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: (Math.random() - 0.5) * 5,
+                    vy: (Math.random() - 0.5) * 5,
+                    size: 2 + Math.random() * 4,
+                    color: color,
+                    alpha: 1
+                });
+            }
+        }
+
+        function endGame() {
+            isPlaying = false;
+            cancelAnimationFrame(frameId);
+
+            finalScore.innerText = `${wishes} 個`;
+            finalAlt.innerText = `最大高度：${Math.floor(altitude)} m`;
+            
+            let comment = "天燈安全降落。心願已高高傳遞！🏮";
+            if (altitude >= 400) {
+                comment = "直達天際！祈福祝福直衝雲霄！👑";
+            } else if (altitude >= 200) {
+                comment = "御風飛行！將福氣灑落平溪山谷！👍";
+            }
+            finalComment.innerText = `評價：${comment}`;
+
+            finalScoreArea.classList.remove('hidden');
+            menuOverlay.classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>

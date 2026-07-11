@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>九份金礦探險 - Jiufen Gold Rush</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            background-color: #110f1a;
+            color: #e2e8f0;
+            font-family: 'Noto Sans TC', sans-serif;
+            touch-action: manipulation;
+            overflow: hidden;
+        }
+        .glass {
+            background: rgba(26, 21, 44, 0.75);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 215, 0, 0.25);
+            border-radius: 20px;
+        }
+        .btn-gold {
+            background: linear-gradient(135deg, #ffd700, #ff8c00);
+            color: #110f1a;
+            font-weight: 900;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 2px solid #fff5a0;
+        }
+        .btn-gold:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(255, 215, 0, 0.3);
+        }
+        .grid-cell {
+            background: linear-gradient(135deg, #4a3f35, #2f251d);
+            border: 2px solid #5c4e42;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+            transition: all 0.2s ease-in-out;
+        }
+        .grid-cell.revealed {
+            background: linear-gradient(135deg, #2b231c, #1f1813);
+            border: 1px solid #3d3228;
+            box-shadow: none;
+        }
+        .lantern-glow {
+            box-shadow: 0 0 20px rgba(255, 140, 0, 0.6);
+            animation: pulse 2s infinite alternate;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 0.8; }
+            100% { transform: scale(1.05); opacity: 1; }
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen p-4">
+
+    <!-- HUD -->
+    <div class="fixed top-4 left-4 right-4 flex justify-between gap-4 pointer-events-none z-10 max-w-lg mx-auto">
+        <!-- 分數/黃金 -->
+        <div class="glass px-4 py-2 flex items-center gap-3 pointer-events-auto">
+            <span class="text-2xl">💰</span>
+            <div>
+                <div class="text-[9px] text-amber-400 font-black uppercase tracking-widest">黃金得分</div>
+                <div id="goldLabel" class="text-xl font-black text-yellow-300">0g</div>
+            </div>
+        </div>
+        <!-- 樓層 -->
+        <div class="glass px-4 py-2 flex items-center gap-3 pointer-events-auto">
+            <span class="text-2xl">🏮</span>
+            <div>
+                <div class="text-[9px] text-amber-400 font-black uppercase tracking-widest">目前深度</div>
+                <div id="depthLabel" class="text-xl font-black text-orange-400">地下 1 層</div>
+            </div>
+        </div>
+        <!-- 時間 -->
+        <div class="glass px-4 py-2 flex items-center gap-3 pointer-events-auto">
+            <span class="text-2xl">⏳</span>
+            <div>
+                <div class="text-[9px] text-amber-400 font-black uppercase tracking-widest">剩餘時間</div>
+                <div id="timerLabel" class="text-xl font-black text-red-400">30s</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 遊戲主要區域 -->
+    <div class="w-full max-w-md flex flex-col items-center gap-4 mt-16 relative">
+        <!-- 狀態提醒 / 提示 -->
+        <div id="statusMessage" class="text-center font-bold text-sm text-amber-200 min-h-[24px]">
+            點擊泥土方塊，尋找「鑰匙 🔑」和「黃金 💰」！
+        </div>
+
+        <!-- 網格容器 -->
+        <div id="mineGrid" class="grid grid-cols-6 gap-2 w-full aspect-square bg-[#1f1924] p-3 rounded-2xl border-2 border-amber-600 shadow-2xl">
+            <!-- 網格由 JavaScript 動態生成 -->
+        </div>
+
+        <!-- 下一層按鈕 -->
+        <button id="nextLevelBtn" class="btn-gold py-3 px-8 rounded-xl opacity-50 cursor-not-allowed text-lg shadow-lg flex items-center gap-2" disabled>
+            <span>🚪 搭乘礦車前往下一層</span>
+        </button>
+
+        <!-- 返回主選單按鈕 -->
+        <button id="inGameResetBtn" class="glass px-4 py-2 text-xs font-bold text-amber-300 flex items-center gap-1 mt-2 hover:text-white transition-colors">
+            <span>🏠 返回主選單</span>
+        </button>
+    </div>
+
+    <!-- 選單 Overlay -->
+    <div id="menuOverlay" class="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-6">
+        <div class="glass p-8 rounded-[32px] shadow-2xl max-w-sm w-full text-center border-2 border-yellow-500/50">
+            <div class="text-6xl mb-4 animate-bounce">⛏️</div>
+            <h1 class="text-3xl font-black text-yellow-400 mb-2">九份金礦探險</h1>
+            <p class="text-slate-300 text-xs mb-6 leading-relaxed">
+                九份山城曾以產金聞名。進入深邃的歷史礦坑，在時間內挖出黃金與黃寶石，找到鑰匙並搭乘礦車前往更深層！小心鬆動的岩石引發塌方！
+            </p>
+
+            <!-- 設定區 -->
+            <div class="space-y-4 mb-6 bg-purple-950/40 p-4 rounded-2xl border border-yellow-500/20 text-left text-sm">
+                <div class="flex flex-col gap-1">
+                    <div class="flex justify-between font-bold text-amber-300">
+                        <span>初始探險時間</span>
+                        <span id="timeValue">30秒</span>
+                    </div>
+                    <input type="range" id="timeSetting" min="15" max="90" step="5" value="30" class="w-full h-1.5 bg-purple-950 rounded-lg appearance-none cursor-pointer accent-yellow-500">
+                </div>
+                <div class="flex flex-col gap-1">
+                    <div class="flex justify-between font-bold text-amber-300">
+                        <span>塌方落石機率</span>
+                        <span id="trapValue">3個</span>
+                    </div>
+                    <input type="range" id="trapSetting" min="1" max="8" step="1" value="3" class="w-full h-1.5 bg-purple-950 rounded-lg appearance-none cursor-pointer accent-yellow-500">
+                </div>
+            </div>
+
+            <!-- 結算顯示 -->
+            <div id="finalScoreArea" class="hidden mb-6 p-4 bg-yellow-500/10 rounded-2xl border border-yellow-500/30">
+                <p class="text-amber-400 text-[10px] font-black tracking-wider uppercase mb-1">本次探險總黃金</p>
+                <p id="finalScore" class="text-4xl font-black text-yellow-300">0g</p>
+                <p id="finalDepth" class="text-xs text-orange-400 font-bold mt-1">到達深度：地下 1 層</p>
+            </div>
+
+            <button id="startBtn" class="btn-gold w-full py-4 rounded-xl text-lg shadow-lg">
+                開始探險
+            </button>
+        </div>
+    </div>
+
+    <!-- Web Audio & 遊戲邏輯 -->
+    <script>
+        // Web Audio API 聲效合成器
+        const AudioSynth = {
+            ctx: null,
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            },
+            play(type) {
+                this.init();
+                if (!this.ctx) return;
+                
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                const now = this.ctx.currentTime;
+
+                if (type === 'dig') {
+                    // 挖土短促的低音
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(150, now);
+                    osc.frequency.exponentialRampToValueAtTime(40, now + 0.1);
+                    gain.gain.setValueAtTime(0.5, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                    osc.start(now);
+                    osc.stop(now + 0.1);
+                } else if (type === 'gold') {
+                    // 黃金叮鈴高音
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(987.77, now); // B5
+                    osc.frequency.setValueAtTime(1318.51, now + 0.08); // E6
+                    gain.gain.setValueAtTime(0.3, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                    osc.start(now);
+                    osc.stop(now + 0.3);
+                } else if (type === 'key') {
+                    // 鑰匙閃耀音效
+                    osc.type = 'sine';
+                    const scale = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+                    scale.forEach((freq, idx) => {
+                        const noteTime = now + (idx * 0.07);
+                        const noteOsc = this.ctx.createOscillator();
+                        const noteGain = this.ctx.createGain();
+                        noteOsc.type = 'sine';
+                        noteOsc.frequency.setValueAtTime(freq, noteTime);
+                        noteOsc.connect(noteGain);
+                        noteGain.connect(this.ctx.destination);
+                        noteGain.gain.setValueAtTime(0.25, noteTime);
+                        noteGain.gain.exponentialRampToValueAtTime(0.01, noteTime + 0.2);
+                        noteOsc.start(noteTime);
+                        noteOsc.stop(noteTime + 0.2);
+                    });
+                } else if (type === 'explosion') {
+                    // 崩塌爆炸噪聲
+                    // 用低頻雜音模擬
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(100, now);
+                    osc.frequency.linearRampToValueAtTime(20, now + 0.5);
+                    gain.gain.setValueAtTime(0.8, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+                    osc.start(now);
+                    osc.stop(now + 0.5);
+                } else if (type === 'next') {
+                    // 下一層礦車出發
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(300, now);
+                    osc.frequency.exponentialRampToValueAtTime(600, now + 0.4);
+                    gain.gain.setValueAtTime(0.3, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+                    osc.start(now);
+                    osc.stop(now + 0.4);
+                }
+            }
+        };
+
+        const gridContainer = document.getElementById('mineGrid');
+        const goldLabel = document.getElementById('goldLabel');
+        const depthLabel = document.getElementById('depthLabel');
+        const timerLabel = document.getElementById('timerLabel');
+        const statusMessage = document.getElementById('statusMessage');
+        const nextLevelBtn = document.getElementById('nextLevelBtn');
+        const inGameResetBtn = document.getElementById('inGameResetBtn');
+
+        const menuOverlay = document.getElementById('menuOverlay');
+        const startBtn = document.getElementById('startBtn');
+        const timeSetting = document.getElementById('timeSetting');
+        const trapSetting = document.getElementById('trapSetting');
+        const timeValueDisplay = document.getElementById('timeValue');
+        const trapValueDisplay = document.getElementById('trapValue');
+        const finalScoreArea = document.getElementById('finalScoreArea');
+        const finalScore = document.getElementById('finalScore');
+        const finalDepth = document.getElementById('finalDepth');
+
+        // 更新選單設定顯示
+        timeSetting.oninput = () => timeValueDisplay.innerText = `${timeSetting.value}秒`;
+        trapSetting.oninput = () => trapValueDisplay.innerText = `${trapSetting.value}個`;
+
+        let score = 0;
+        let depth = 1;
+        let timeLeft = 30;
+        let isPlaying = false;
+        let hasKey = false;
+        let timerInterval = null;
+        let gridData = [];
+
+        // 啟動遊戲
+        startBtn.onclick = () => {
+            AudioSynth.init();
+            score = 0;
+            depth = 1;
+            timeLeft = parseInt(timeSetting.value);
+            hasKey = false;
+            isPlaying = true;
+            menuOverlay.classList.add('hidden');
+            
+            updateHUD();
+            generateGrid();
+            startTimer();
+        };
+
+        // 返回選單
+        inGameResetBtn.onclick = () => {
+            endGame();
+        };
+
+        // 下一層
+        nextLevelBtn.onclick = () => {
+            if (!hasKey) return;
+            AudioSynth.play('next');
+            depth++;
+            hasKey = false;
+            timeLeft += 15; // 進入下一層額外贈送15秒
+            if (timeLeft > parseInt(timeSetting.value) * 1.5) {
+                timeLeft = Math.floor(parseInt(timeSetting.value) * 1.5);
+            }
+            statusMessage.innerText = `成功搭乘礦車！進入地下 ${depth} 層！`;
+            statusMessage.className = "text-center font-bold text-sm text-green-300";
+            updateHUD();
+            generateGrid();
+        };
+
+        function startTimer() {
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                if (!isPlaying) return;
+                timeLeft--;
+                timerLabel.innerText = `${timeLeft}s`;
+                if (timeLeft <= 5) {
+                    timerLabel.className = "text-xl font-black text-red-500 animate-pulse";
+                } else {
+                    timerLabel.className = "text-xl font-black text-red-400";
+                }
+
+                if (timeLeft <= 0) {
+                    endGame();
+                }
+            }, 1000);
+        }
+
+        function updateHUD() {
+            goldLabel.innerText = `${score}g`;
+            depthLabel.innerText = `地下 ${depth} 層`;
+            timerLabel.innerText = `${timeLeft}s`;
+            
+            if (hasKey) {
+                nextLevelBtn.disabled = false;
+                nextLevelBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                nextLevelBtn.classList.add('lantern-glow');
+            } else {
+                nextLevelBtn.disabled = true;
+                nextLevelBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                nextLevelBtn.classList.remove('lantern-glow');
+            }
+        }
+
+        // 生成地圖
+        function generateGrid() {
+            gridContainer.innerHTML = '';
+            gridData = [];
+            hasKey = false;
+            updateHUD();
+
+            const totalCells = 36;
+            const trapCount = Math.min(parseInt(trapSetting.value) + Math.floor(depth / 2), 12); // 隨深度稍微增加難度
+            const keyIndex = Math.floor(Math.random() * totalCells);
+
+            // 隨機分配陷阱與黃金
+            let indices = Array.from({length: totalCells}, (_, i) => i);
+            indices.splice(indices.indexOf(keyIndex), 1); // 排除鑰匙格，確保鑰匙不會跟陷阱重合
+
+            // 選取陷阱位置
+            let trapIndices = [];
+            for (let i = 0; i < trapCount; i++) {
+                const randIdx = Math.floor(Math.random() * indices.length);
+                trapIndices.push(indices[randIdx]);
+                indices.splice(randIdx, 1);
+            }
+
+            // 選取黃金與寶石位置
+            let goldIndices = [];
+            let gemIndices = [];
+            
+            // 剩下的位置分配一部分為黃金與寶石
+            const goldCount = 8;
+            const gemCount = 2;
+            for (let i = 0; i < goldCount; i++) {
+                if (indices.length === 0) break;
+                const randIdx = Math.floor(Math.random() * indices.length);
+                goldIndices.push(indices[randIdx]);
+                indices.splice(randIdx, 1);
+            }
+            for (let i = 0; i < gemCount; i++) {
+                if (indices.length === 0) break;
+                const randIdx = Math.floor(Math.random() * indices.length);
+                gemIndices.push(indices[randIdx]);
+                indices.splice(randIdx, 1);
+            }
+
+            for (let i = 0; i < totalCells; i++) {
+                let type = 'empty';
+                let amount = 0;
+
+                if (i === keyIndex) {
+                    type = 'key';
+                } else if (trapIndices.includes(i)) {
+                    type = 'trap';
+                } else if (goldIndices.includes(i)) {
+                    type = 'gold';
+                    amount = Math.random() > 0.5 ? 10 : 20; // 10g or 20g
+                } else if (gemIndices.includes(i)) {
+                    type = 'gem';
+                    amount = 50; // 紅寶石 50g
+                }
+
+                gridData.push({
+                    type: type,
+                    amount: amount,
+                    revealed: false
+                });
+
+                // 創建格子 DOM Element
+                const cell = document.createElement('button');
+                cell.className = 'grid-cell rounded-lg text-lg flex items-center justify-center font-black select-none';
+                cell.dataset.index = i;
+                
+                cell.onclick = () => revealCell(i, cell);
+                gridContainer.appendChild(cell);
+            }
+        }
+
+        // 開挖格子
+        function revealCell(index, cellDOM) {
+            if (!isPlaying) return;
+            const cell = gridData[index];
+            if (cell.revealed) return;
+
+            cell.revealed = true;
+            cellDOM.classList.add('revealed');
+
+            if (cell.type === 'key') {
+                AudioSynth.play('key');
+                cellDOM.innerText = '🔑';
+                cellDOM.classList.add('border-yellow-400', 'bg-yellow-950/40');
+                hasKey = true;
+                statusMessage.innerText = '找到「鑰匙 🔑」了！搭乘下方礦車可以前往更深層！';
+                statusMessage.className = "text-center font-bold text-sm text-yellow-300";
+                updateHUD();
+            } else if (cell.type === 'gold') {
+                AudioSynth.play('gold');
+                cellDOM.innerText = '🪙';
+                cellDOM.classList.add('border-yellow-500', 'text-yellow-400');
+                score += cell.amount;
+                statusMessage.innerText = `挖到金礦！獲得黃金 ${cell.amount}g！`;
+                statusMessage.className = "text-center font-bold text-sm text-yellow-300";
+                updateHUD();
+                createParticles(cellDOM, '#fbbf24');
+            } else if (cell.type === 'gem') {
+                AudioSynth.play('gold');
+                cellDOM.innerText = '💎';
+                cellDOM.classList.add('border-red-500', 'text-red-400');
+                score += cell.amount;
+                statusMessage.innerText = `哇！是高價值的「紅寶石 💎」！獲得黃金 ${cell.amount}g！`;
+                statusMessage.className = "text-center font-bold text-sm text-red-300";
+                updateHUD();
+                createParticles(cellDOM, '#f87171');
+            } else if (cell.type === 'trap') {
+                AudioSynth.play('explosion');
+                cellDOM.innerText = '💥';
+                cellDOM.classList.add('border-red-600', 'bg-red-950/40');
+                statusMessage.innerText = '不好了！坑道塌方落石！扣除 10 秒時間！';
+                statusMessage.className = "text-center font-bold text-sm text-red-400";
+                timeLeft = Math.max(0, timeLeft - 10);
+                updateHUD();
+                createParticles(cellDOM, '#dc2626');
+                
+                // 震動網格效果
+                gridContainer.classList.add('animate-bounce');
+                setTimeout(() => gridContainer.classList.remove('animate-bounce'), 500);
+
+                if (timeLeft <= 0) {
+                    endGame();
+                }
+            } else {
+                AudioSynth.play('dig');
+                cellDOM.innerText = '';
+                statusMessage.innerText = '只有一些碎泥土，繼續努力！';
+                statusMessage.className = "text-center font-bold text-sm text-slate-400";
+                createParticles(cellDOM, '#4a3f35');
+            }
+        }
+
+        // 簡單粒子噴灑
+        function createParticles(element, color) {
+            const rect = element.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+
+            for (let i = 0; i < 8; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'fixed rounded-full pointer-events-none z-50';
+                particle.style.width = '6px';
+                particle.style.height = '6px';
+                particle.style.backgroundColor = color;
+                particle.style.left = `${centerX}px`;
+                particle.style.top = `${centerY}px`;
+                
+                const angle = Math.random() * Math.PI * 2;
+                const speed = 2 + Math.random() * 5;
+                const vx = Math.cos(angle) * speed;
+                const vy = Math.sin(angle) * speed - 2; // 微弱重力上拉
+
+                document.body.appendChild(particle);
+
+                let opacity = 1;
+                let px = centerX;
+                let py = centerY;
+
+                const animate = () => {
+                    if (opacity <= 0) {
+                        particle.remove();
+                        return;
+                    }
+                    opacity -= 0.05;
+                    px += vx;
+                    py += vy + 0.1; // 模擬重力下落
+                    particle.style.left = `${px}px`;
+                    particle.style.top = `${py}px`;
+                    particle.style.opacity = opacity;
+                    requestAnimationFrame(animate);
+                };
+                requestAnimationFrame(animate);
+            }
+        }
+
+        // 結束探險
+        function endGame() {
+            isPlaying = false;
+            clearInterval(timerInterval);
+            
+            finalScore.innerText = `${score}g`;
+            finalDepth.innerText = `到達深度：地下 ${depth} 層`;
+            finalScoreArea.classList.remove('hidden');
+            menuOverlay.classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>夜市刮刮樂發財夢 - Night Market Scratch Card</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            background-color: #0f0b09;
+            color: #fef3c7;
+            font-family: 'Noto Sans TC', sans-serif;
+            touch-action: none;
+            overflow: hidden;
+        }
+        .glass {
+            background: rgba(28, 20, 16, 0.9);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(234, 179, 8, 0.25);
+            border-radius: 20px;
+        }
+        .btn-gold {
+            background: linear-gradient(135deg, #fbbf24, #d97706);
+            color: #0f0b09;
+            font-weight: 900;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 2px solid #fef08a;
+        }
+        .btn-gold:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(251, 191, 36, 0.35);
+        }
+        .card-container {
+            position: relative;
+            background: linear-gradient(135deg, #b91c1c 0%, #7f1d1d 100%);
+            border: 4px solid #fbbf24;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.6);
+        }
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen p-4">
+
+    <!-- HUD -->
+    <div class="fixed top-4 left-4 right-4 flex justify-between gap-4 pointer-events-none z-10 max-w-lg mx-auto">
+        <!-- 荷包本金 -->
+        <div class="glass px-4 py-2 flex items-center gap-3 pointer-events-auto">
+            <span class="text-2xl">💰</span>
+            <div>
+                <div class="text-[9px] text-yellow-400 font-black uppercase tracking-widest">發財本金</div>
+                <div id="cashLabel" class="text-xl font-black text-yellow-300">$100</div>
+            </div>
+        </div>
+        <!-- 本張中獎 -->
+        <div class="glass px-4 py-2 flex items-center gap-3 pointer-events-auto">
+            <span class="text-2xl">🧧</span>
+            <div>
+                <div class="text-[9px] text-yellow-400 font-black uppercase tracking-widest">本期獎金</div>
+                <div id="prizeLabel" class="text-xl font-black text-red-400">$0</div>
+            </div>
+        </div>
+        <!-- 刮開進度 -->
+        <div class="glass px-4 py-2 flex items-center gap-3 pointer-events-auto">
+            <span class="text-2xl">✨</span>
+            <div>
+                <div class="text-[9px] text-yellow-400 font-black uppercase tracking-widest">刮除進度</div>
+                <div id="percentLabel" class="text-xl font-black text-white">0%</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 遊戲主要區域 -->
+    <div class="w-full max-w-md flex flex-col items-center gap-4 mt-16 relative">
+        
+        <!-- 刮刮樂卡片區 -->
+        <div id="cardArea" class="card-container w-full h-[220px] rounded-3xl overflow-hidden relative">
+            <!-- 底層中獎內容 (HTML) -->
+            <div id="cardContent" class="absolute inset-0 flex flex-col items-center justify-between p-4 text-center select-none">
+                <div id="cardHeader" class="text-yellow-350 text-sm font-black tracking-wider">金泰國蝦 🦐 刮刮樂</div>
+                
+                <!-- 圖示網格區 -->
+                <div id="symbolGrid" class="grid grid-cols-3 gap-4 w-full px-6 flex-1 items-center justify-center">
+                    <!-- 刮刮樂圖示 -->
+                </div>
+
+                <div id="cardFooter" class="text-red-300 text-xs font-bold">刮開上面三個方格，連線或相同即中獎！</div>
+            </div>
+
+            <!-- 頂層銀漆塗層 (Canvas) -->
+            <canvas id="scratchCanvas" width="400" height="220" class="rounded-3xl"></canvas>
+        </div>
+
+        <!-- 功能與翻倍下注區 -->
+        <div class="w-full flex flex-col gap-3">
+            <!-- 購卡選單 -->
+            <div id="buyOptions" class="grid grid-cols-3 gap-2">
+                <button class="btn-gold py-2 rounded-xl text-xs flex flex-col items-center" onclick="buyTicket('shrimp', 20)">
+                    <span>金泰國蝦</span>
+                    <span class="text-[10px] opacity-80">$20</span>
+                </button>
+                <button class="btn-gold py-2 rounded-xl text-xs flex flex-col items-center" onclick="buyTicket('soup', 50)">
+                    <span>牛肉湯大亨</span>
+                    <span class="text-[10px] opacity-80">$50</span>
+                </button>
+                <button class="btn-gold py-2 rounded-xl text-xs flex flex-col items-center" onclick="buyTicket('dragon', 100)">
+                    <span>終界龍賀歲</span>
+                    <span class="text-[10px] opacity-80">$100</span>
+                </button>
+            </div>
+
+            <!-- 雙倍擲骰子遊戲 (平時隱藏) -->
+            <div id="diceGameArea" class="glass p-4 rounded-3xl border border-yellow-500/30 text-center flex flex-col gap-2 hidden">
+                <div class="text-xs text-yellow-400 font-black">🎲 翻倍對決！猜骰子點數大小</div>
+                <div class="text-lg font-black text-stone-300 min-h-[28px]" id="diceResult">骰子點數和: ?</div>
+                
+                <div class="grid grid-cols-2 gap-2 mt-1">
+                    <button class="btn-gold py-3 rounded-xl font-bold" onclick="playDice('big')">買大 (8~12點) 翻倍</button>
+                    <button class="btn-gold py-3 rounded-xl font-bold" onclick="playDice('small')">買小 (2~6點) 翻倍</button>
+                </div>
+                <button class="text-xs text-stone-400 underline mt-1" onclick="skipDice()">不玩了，直接領取獎金</button>
+            </div>
+            
+            <!-- 結算/下一張按鈕 -->
+            <button id="claimBtn" class="btn-gold w-full py-4 rounded-2xl text-lg shadow-lg hidden" onclick="claimPrize()">
+                領取獎金 🧧
+            </button>
+        </div>
+
+        <div class="text-stone-400 text-xs text-center hidden md:block">
+            玩法：先 <span class="text-yellow-400 font-bold">選擇購買一張彩券</span>，然後在紅色區域上 <span class="text-yellow-400 font-bold">按住滑鼠拖曳/塗抹</span> 刮開銀漆！
+        </div>
+
+        <!-- 返回選單 -->
+        <button id="inGameResetBtn" class="glass px-4 py-2 text-xs font-bold text-yellow-300 flex items-center gap-1 hover:text-white transition-colors">
+            <span>🏠 返回主選單</span>
+        </button>
+    </div>
+
+    <!-- 選單 Overlay -->
+    <div id="menuOverlay" class="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center z-50 p-6">
+        <div class="glass p-8 rounded-[32px] shadow-2xl max-w-sm w-full text-center border-2 border-yellow-500/50">
+            <div class="text-6xl mb-4 animate-bounce">🧧</div>
+            <h1 class="text-3xl font-black text-yellow-400 mb-2">夜市刮刮樂發財夢</h1>
+            <p class="text-stone-300 text-xs mb-6 leading-relaxed">
+                在夜市熱鬧的彩券攤前，用你的發財本金購買不同面額的刮刮樂！刮開銀漆，對齊圖案或中獎號碼，贏取大獎。中獎後還能選擇與老闆「擲骰子猜大小」，成功即可將當前獎金「翻倍」，但猜錯獎金將全數歸零！你有信心成為百萬富翁嗎？
+            </p>
+
+            <!-- 設定區 -->
+            <div class="space-y-4 mb-6 bg-slate-950/60 p-4 rounded-2xl border border-yellow-500/20 text-left text-sm">
+                <div class="flex flex-col gap-1">
+                    <div class="flex justify-between font-bold text-yellow-300">
+                        <span>初始本金</span>
+                        <span id="cashValue">$100</span>
+                    </div>
+                    <input type="range" id="cashSetting" min="50" max="500" step="50" value="100" class="w-full h-1.5 bg-[#271c14] rounded-lg appearance-none cursor-pointer accent-yellow-500">
+                </div>
+                <div class="flex flex-col gap-1">
+                    <div class="flex justify-between font-bold text-yellow-300">
+                        <span>刮卡刷頭粗細</span>
+                        <span id="brushValue">20px</span>
+                    </div>
+                    <input type="range" id="brushSetting" min="10" max="40" step="5" value="20" class="w-full h-1.5 bg-[#271c14] rounded-lg appearance-none cursor-pointer accent-yellow-500">
+                </div>
+            </div>
+
+            <!-- 結算顯示 -->
+            <div id="finalScoreArea" class="hidden mb-6 p-4 bg-yellow-500/10 rounded-2xl border border-yellow-500/30">
+                <p class="text-yellow-400 text-[10px] font-black tracking-wider uppercase mb-1">今日最終本金</p>
+                <p id="finalScore" class="text-4xl font-black text-yellow-300">$0</p>
+                <p id="finalComment" class="text-xs text-stone-300 font-bold mt-1">評價：差點賠光</p>
+            </div>
+
+            <button id="startBtn" class="btn-gold w-full py-4 rounded-xl text-lg shadow-lg">
+                開始刮獎
+            </button>
+        </div>
+    </div>
+
+    <!-- Web Audio & Canvas 邏輯 -->
+    <script>
+        const AudioSynth = {
+            ctx: null,
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            },
+            play(type) {
+                this.init();
+                if (!this.ctx) return;
+                
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                if (type === 'scratch') {
+                    // 刮卡磨砂聲 (高頻細碎三角波)
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(3000, now);
+                    osc.frequency.linearRampToValueAtTime(1000, now + 0.05);
+                    gain.gain.setValueAtTime(0.06, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+                    osc.start(now);
+                    osc.stop(now + 0.05);
+                } else if (type === 'coin') {
+                    // 金幣叮鈴
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(987.77, now);
+                    osc.frequency.setValueAtTime(1318.51, now + 0.08);
+                    gain.gain.setValueAtTime(0.25, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+                    osc.start(now);
+                    osc.stop(now + 0.25);
+                } else if (type === 'dice') {
+                    // 骰子滾動 (低沉悶響)
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(120, now);
+                    osc.frequency.linearRampToValueAtTime(80, now + 0.15);
+                    gain.gain.setValueAtTime(0.3, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+                    osc.start(now);
+                    osc.stop(now + 0.15);
+                } else if (type === 'double') {
+                    // 翻倍成功
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(587.33, now);
+                    osc.frequency.setValueAtTime(880, now + 0.08);
+                    osc.frequency.setValueAtTime(1174.66, now + 0.16);
+                    gain.gain.setValueAtTime(0.3, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+                    osc.start(now);
+                    osc.stop(now + 0.35);
+                } else if (type === 'lose') {
+                    // 輸光
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(150, now);
+                    gain.gain.setValueAtTime(0.35, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                    osc.start(now);
+                    osc.stop(now + 0.3);
+                }
+            }
+        };
+
+        const canvas = document.getElementById('scratchCanvas');
+        const ctx = canvas.getContext('2d');
+        const cashLabel = document.getElementById('cashLabel');
+        const prizeLabel = document.getElementById('prizeLabel');
+        const percentLabel = document.getElementById('percentLabel');
+
+        const menuOverlay = document.getElementById('menuOverlay');
+        const startBtn = document.getElementById('startBtn');
+        const cashSetting = document.getElementById('cashSetting');
+        const brushSetting = document.getElementById('brushSetting');
+        const cashValueDisplay = document.getElementById('cashValue');
+        const brushValueDisplay = document.getElementById('brushValue');
+
+        const finalScoreArea = document.getElementById('finalScoreArea');
+        const finalScore = document.getElementById('finalScore');
+        const finalComment = document.getElementById('finalComment');
+        const inGameResetBtn = document.getElementById('inGameResetBtn');
+
+        const buyOptions = document.getElementById('buyOptions');
+        const diceGameArea = document.getElementById('diceGameArea');
+        const diceResult = document.getElementById('diceResult');
+        const claimBtn = document.getElementById('claimBtn');
+        const symbolGrid = document.getElementById('symbolGrid');
+
+        cashSetting.oninput = () => cashValueDisplay.innerText = `$${cashSetting.value}`;
+        brushSetting.oninput = () => brushValueDisplay.innerText = `${brushSetting.value}px`;
+
+        let isPlaying = false;
+        let cash = 100;
+        let currentPrize = 0;
+        let brushSize = 20;
+
+        let ticketType = '';
+        let ticketCost = 0;
+        let isDrawing = false;
+        let totalPixels = 400 * 220;
+        let revealedPercent = 0;
+        let ticketFinished = false;
+
+        // 刮刮樂中獎數據
+        let ticketSymbols = [];
+
+        startBtn.onclick = () => {
+            AudioSynth.init();
+            cash = parseInt(cashSetting.value);
+            brushSize = parseInt(brushSetting.value);
+            
+            isPlaying = true;
+            currentPrize = 0;
+            ticketFinished = false;
+
+            menuOverlay.classList.add('hidden');
+            updateHUD();
+            resetCanvasState();
+            
+            // 啟用購卡
+            enableBuying(true);
+            diceGameArea.classList.add('hidden');
+            claimBtn.classList.add('hidden');
+        };
+
+        inGameResetBtn.onclick = () => {
+            endGame();
+        };
+
+        function updateHUD() {
+            cashLabel.innerText = `$${cash}`;
+            prizeLabel.innerText = `$${currentPrize}`;
+            percentLabel.innerText = `${Math.floor(revealedPercent)}%`;
+        }
+
+        function resetCanvasState() {
+            // 重置刮刮樂 Canvas 層 (塗滿銀色與發光紅格紋)
+            ctx.save();
+            ctx.fillStyle = '#d1d5db'; // 銀灰底
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // 畫出一些金粉與防偽網紋
+            ctx.strokeStyle = '#9ca3af';
+            ctx.lineWidth = 1;
+            for (let i = 0; i < canvas.width; i += 20) {
+                ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, canvas.height); ctx.stroke();
+            }
+            for (let i = 0; i < canvas.height; i += 20) {
+                ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(canvas.width, i); ctx.stroke();
+            }
+
+            // 寫上「請刮開此區域」
+            ctx.fillStyle = '#374151';
+            ctx.font = 'bold 18px sans-serif';
+            ctx.fillText('✨ 點擊並刮開此區域 🍀', 95, 115);
+            ctx.restore();
+
+            revealedPercent = 0;
+            ticketFinished = false;
+            updateHUD();
+        }
+
+        function enableBuying(status) {
+            const buttons = buyOptions.querySelectorAll('button');
+            buttons.forEach(btn => btn.disabled = !status);
+            
+            if (status) {
+                buyOptions.classList.remove('opacity-40');
+            } else {
+                buyOptions.classList.add('opacity-40');
+            }
+        }
+
+        // 購買彩券
+        function buyTicket(type, cost) {
+            if (cash < cost) {
+                alert("餘額不足，買不起這張刮刮樂！");
+                return;
+            }
+
+            cash -= cost;
+            ticketCost = cost;
+            ticketType = type;
+            currentPrize = 0;
+
+            updateHUD();
+            resetCanvasState();
+            enableBuying(false); // 正在刮卡，禁止再買
+
+            // 生成彩券內容與中獎概率
+            generateTicketData();
+        }
+
+        function generateTicketData() {
+            symbolGrid.innerHTML = '';
+            ticketSymbols = [];
+
+            const roll = Math.random();
+            let isWinner = false;
+            let winAmount = 0;
+
+            // 機率：40% 概率中獎，牛肉湯和終界龍中獎金額高
+            if (ticketType === 'shrimp') {
+                isWinner = roll > 0.55;
+                winAmount = isWinner ? (Math.random() > 0.5 ? 40 : 100) : 0;
+            } else if (ticketType === 'soup') {
+                isWinner = roll > 0.6;
+                winAmount = isWinner ? (Math.random() > 0.6 ? 150 : 300) : 0;
+            } else if (ticketType === 'dragon') {
+                isWinner = roll > 0.65;
+                winAmount = isWinner ? (Math.random() > 0.7 ? 500 : 1000) : 0;
+            }
+
+            // 生成對應圖案
+            if (isWinner) {
+                // 中獎：三個格子圖標一致
+                const emojis = ticketType === 'shrimp' ? ['🦐', '🦐', '🦐'] : ticketType === 'soup' ? ['🍲', '🍲', '🍲'] : ['🐉', '🐉', '🐉'];
+                ticketSymbols = emojis;
+                currentPrize = winAmount;
+            } else {
+                // 未中獎：隨機生成不一致的圖案
+                const pool = ['🦐', '🍲', '🐉', '🦀', '🪙', '🏮'];
+                // 確保不一致
+                let a = pool[Math.floor(Math.random() * pool.length)];
+                let b = pool[Math.floor(Math.random() * pool.length)];
+                while(b === a) b = pool[Math.floor(Math.random() * pool.length)];
+                let c = pool[Math.floor(Math.random() * pool.length)];
+                while(c === a || c === b) c = pool[Math.floor(Math.random() * pool.length)];
+                
+                ticketSymbols = [a, b, c];
+                currentPrize = 0;
+            }
+
+            // 更新 HTML 底層內容
+            const names = { shrimp: '金泰國蝦 🦐', soup: '牛肉湯大亨 🍲', dragon: '終界龍賀歲 🐉' };
+            document.getElementById('cardHeader').innerText = `✨ ${names[ticketType]} 彩券 ✨`;
+            
+            ticketSymbols.forEach(sym => {
+                const cell = document.createElement('div');
+                cell.className = 'glass py-4 text-4xl flex items-center justify-center border border-yellow-500/20';
+                cell.innerText = sym;
+                symbolGrid.appendChild(cell);
+            });
+        }
+
+        // 刮銀漆事件
+        function getCanvasMousePos(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return {
+                x: ((clientX - rect.left) / rect.width) * canvas.width,
+                y: ((clientY - rect.top) / rect.height) * canvas.height
+            };
+        }
+
+        const handleStart = (e) => {
+            if (ticketCost === 0 || ticketFinished) return;
+            isDrawing = true;
+            handleScratch(e);
+        };
+
+        const handleMove = (e) => {
+            if (!isDrawing || ticketFinished) return;
+            handleScratch(e);
+        };
+
+        const handleEnd = () => {
+            isDrawing = false;
+            if (ticketCost > 0 && !ticketFinished) {
+                checkPercent();
+            }
+        };
+
+        function handleScratch(e) {
+            const pos = getCanvasMousePos(e);
+            
+            // 使用 Composite Operation 抹除 Canvas
+            ctx.save();
+            ctx.globalCompositeOperation = 'destination-out';
+            ctx.beginPath();
+            ctx.arc(pos.x, pos.y, brushSize, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+
+            AudioSynth.play('scratch');
+        }
+
+        canvas.addEventListener('mousedown', handleStart);
+        canvas.addEventListener('mousemove', handleMove);
+        canvas.addEventListener('mouseup', handleEnd);
+
+        canvas.addEventListener('touchstart', handleStart);
+        canvas.addEventListener('touchmove', handleMove);
+        canvas.addEventListener('touchend', handleEnd);
+
+        // 檢查刮開百分比
+        function checkPercent() {
+            // 取樣 Canvas 像素數據以計算刮開程度
+            const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            let cleared = 0;
+            const step = 80; // 間隔取樣以提升性能
+            
+            for (let i = 3; i < imgData.data.length; i += step) {
+                if (imgData.data[i] === 0) {
+                    cleared += step / 4;
+                }
+            }
+
+            revealedPercent = (cleared / (imgData.data.length / 4)) * 100;
+            updateHUD();
+
+            if (revealedPercent >= 70) {
+                // 刮開 70% 視為完成刮卡，直接擦除全部銀色
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                revealedPercent = 100;
+                ticketFinished = true;
+                updateHUD();
+
+                // 彈出結算或擲骰子翻倍面板
+                showPayoutMenu();
+            }
+        }
+
+        function showPayoutMenu() {
+            if (currentPrize > 0) {
+                // 中獎了，可選翻倍
+                AudioSynth.play('coin');
+                diceGameArea.classList.remove('hidden');
+                diceResult.innerText = `恭喜刮中 $${currentPrize}！是否玩翻倍擲骰子？`;
+            } else {
+                // 未中獎
+                AudioSynth.play('lose');
+                claimBtn.classList.remove('hidden');
+                claimBtn.innerText = "沒中獎，下一張 🧧";
+            }
+        }
+
+        // 翻倍對決
+        let isDiceRolled = false;
+        function playDice(guess) {
+            if (isDiceRolled) return;
+            isDiceRolled = true;
+
+            // 骰子動畫：連續模擬聲效
+            let rollCount = 0;
+            const interval = setInterval(() => {
+                AudioSynth.play('dice');
+                rollCount++;
+                if (rollCount > 6) {
+                    clearInterval(interval);
+                    
+                    // 結算擲骰
+                    const d1 = 1 + Math.floor(Math.random() * 6);
+                    const d2 = 1 + Math.floor(Math.random() * 6);
+                    const sum = d1 + d2;
+                    let result = sum >= 8 ? 'big' : sum <= 6 ? 'small' : 'seven';
+
+                    let isWin = guess === result;
+
+                    if (isWin) {
+                        AudioSynth.play('double');
+                        currentPrize *= 2;
+                        diceResult.innerText = `🎲 點數: ${d1} + ${d2} = ${sum} (${sum >= 8 ? '大' : '小'})。猜對了！獎金加倍為 $${currentPrize}！`;
+                    } else {
+                        AudioSynth.play('lose');
+                        currentPrize = 0;
+                        diceResult.innerText = `🎲 點數: ${d1} + ${d2} = ${sum} (${sum === 7 ? '點數7' : (sum >= 8 ? '大' : '小')})。猜錯了！獎金全歸零！`;
+                    }
+                    
+                    updateHUD();
+                    
+                    // 顯示領取鈕
+                    setTimeout(() => {
+                        diceGameArea.classList.add('hidden');
+                        claimBtn.classList.remove('hidden');
+                        claimBtn.innerText = currentPrize > 0 ? "領取翻倍獎金 🧧" : "領取 $0 獎金";
+                    }, 2000);
+                }
+            }, 120);
+        }
+
+        function skipDice() {
+            // 直接領獎
+            diceGameArea.classList.add('hidden');
+            claimBtn.classList.remove('hidden');
+            claimBtn.innerText = `直接領取 $${currentPrize} 獎金 🧧`;
+        }
+
+        function claimPrize() {
+            cash += currentPrize;
+            currentPrize = 0;
+            ticketCost = 0;
+            isDiceRolled = false;
+
+            updateHUD();
+            resetCanvasState();
+            enableBuying(true);
+            claimBtn.classList.add('hidden');
+
+            if (cash < 20) {
+                // 本金低於最低面額20元，破產
+                setTimeout(endGame, 1000);
+            }
+        }
+
+        function endGame() {
+            isPlaying = false;
+            clearInterval(timerInterval);
+
+            finalScore.innerText = `$${cash}`;
+            
+            let comment = "發財夢醒了！夜市打烊了，回家睡覺吧！💤";
+            if (cash >= 300) {
+                comment = "刮刮樂之神！發家致富，稱霸彩券行！👑";
+            } else if (cash >= 120) {
+                comment = "小賺一筆！見好就收的理智玩家！👍";
+            } else if (cash <= 0 || cash < 20) {
+                comment = "大破產！血本無歸，搭捷運回家的錢都沒了！🚑";
+            }
+            finalComment.innerText = `評價：${comment}`;
+
+            finalScoreArea.classList.remove('hidden');
+            menuOverlay.classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>

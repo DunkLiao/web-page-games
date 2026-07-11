@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>台南牛肉湯火候師 - Tainan Beef Soup Master</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            background-color: #0c0a09;
+            color: #f5f5f4;
+            font-family: 'Noto Sans TC', sans-serif;
+            touch-action: manipulation;
+            overflow: hidden;
+        }
+        .glass {
+            background: rgba(28, 25, 23, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(239, 68, 68, 0.25);
+            border-radius: 20px;
+        }
+        .btn-red {
+            background: linear-gradient(135deg, #ef4444, #b91c1c);
+            color: #ffffff;
+            font-weight: 900;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 2px solid #fca5a5;
+        }
+        .btn-red:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(239, 68, 68, 0.35);
+        }
+        .beef-slice {
+            transition: background-color 0.1s ease;
+        }
+        /* 蒸氣效果 */
+        .steam {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            filter: blur(4px);
+            animation: rise 1.5s infinite linear;
+        }
+        @keyframes rise {
+            0% { transform: translateY(0) scale(1); opacity: 0.8; }
+            100% { transform: translateY(-100px) scale(3); opacity: 0; }
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen p-4">
+
+    <!-- HUD -->
+    <div class="fixed top-4 left-4 right-4 flex justify-between gap-4 pointer-events-none z-10 max-w-lg mx-auto">
+        <!-- 營業額 -->
+        <div class="glass px-4 py-2 flex items-center gap-3 pointer-events-auto">
+            <span class="text-2xl">💵</span>
+            <div>
+                <div class="text-[9px] text-red-400 font-black uppercase tracking-widest">營業額</div>
+                <div id="scoreLabel" class="text-xl font-black text-red-400">$0</div>
+            </div>
+        </div>
+        <!-- 連擊 Combo -->
+        <div class="glass px-4 py-2 flex items-center gap-3 pointer-events-auto">
+            <span class="text-2xl">🔥</span>
+            <div>
+                <div class="text-[9px] text-orange-400 font-black uppercase tracking-widest">Combo</div>
+                <div id="comboLabel" class="text-xl font-black text-orange-400">0</div>
+            </div>
+        </div>
+        <!-- 時間 -->
+        <div class="glass px-4 py-2 flex items-center gap-3 pointer-events-auto">
+            <span class="text-2xl">⏳</span>
+            <div>
+                <div class="text-[9px] text-red-400 font-black uppercase tracking-widest">剩餘時間</div>
+                <div id="timerLabel" class="text-xl font-black text-white">60s</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 遊戲主要區域 -->
+    <div class="w-full max-w-md flex flex-col items-center gap-6 mt-16 relative">
+        
+        <!-- 顧客隊列區 -->
+        <div class="w-full bg-[#1c1917]/70 p-4 rounded-3xl border border-red-500/20 flex flex-col items-center gap-2">
+            <div class="text-xs text-stone-400 font-bold uppercase tracking-wider">等待點餐顧客</div>
+            <div id="customerZone" class="flex gap-4 min-h-[80px] w-full justify-center items-center">
+                <!-- 顧客動態生成 -->
+            </div>
+        </div>
+
+        <!-- 調理碗區 -->
+        <div class="relative w-full aspect-square bg-stone-900 rounded-[40px] border-4 border-amber-800 shadow-2xl flex flex-col items-center justify-center p-6">
+            
+            <!-- 蒸氣生成容器 -->
+            <div id="steamContainer" class="absolute inset-0 pointer-events-none overflow-hidden rounded-[40px]"></div>
+
+            <!-- 牛肉湯碗 -->
+            <div id="soupBowl" class="relative w-64 h-64 rounded-full bg-stone-850 border-8 border-amber-900 flex items-center justify-center shadow-inner overflow-hidden">
+                <!-- 湯底 -->
+                <div id="soupBroth" class="absolute inset-0 bg-[#2d2219] opacity-0 transition-opacity duration-300"></div>
+
+                <!-- 碗中牛肉片 -->
+                <div class="grid grid-cols-2 gap-3 p-8 z-10">
+                    <div class="beef-slice w-16 h-12 rounded-full bg-red-600 rotate-12 shadow-md"></div>
+                    <div class="beef-slice w-14 h-14 rounded-full bg-red-600 -rotate-12 shadow-md"></div>
+                    <div class="beef-slice w-18 h-10 rounded-full bg-red-650 rotate-45 shadow-md"></div>
+                    <div class="beef-slice w-15 h-13 rounded-full bg-red-600 -rotate-45 shadow-md"></div>
+                </div>
+
+                <!-- 溫度/熟度指標線 (在碗中央顯示) -->
+                <div id="cookGaugeContainer" class="absolute bottom-6 left-12 right-12 h-4 bg-stone-950/80 rounded-full border border-stone-800 overflow-hidden z-20 flex">
+                    <div class="h-full bg-red-500/20 w-[40%] border-r border-stone-800"></div>
+                    <div class="h-full bg-green-500/40 w-[35%] border-r border-stone-800 flex items-center justify-center text-[8px] font-black text-green-300">完美熟度</div>
+                    <div class="h-full bg-yellow-600/30 w-[25%]"></div>
+                </div>
+                
+                <!-- 當前熟度指針 -->
+                <div id="gaugePointer" class="absolute bottom-10 left-[12%] w-4 h-4 bg-white rotate-45 border-2 border-stone-950 z-30 transition-all duration-75"></div>
+            </div>
+
+            <!-- 調理提示 -->
+            <div id="cookStatus" class="mt-4 text-sm font-bold text-red-300">按住下方按鈕「澆入高湯」</div>
+        </div>
+
+        <!-- 澆湯按鈕 (支援長按與放開) -->
+        <button id="pourBtn" class="btn-red w-full py-5 rounded-2xl text-xl shadow-lg select-none">
+            按住澆入高湯 🍲
+        </button>
+
+        <!-- 返回選單 -->
+        <button id="inGameResetBtn" class="glass px-4 py-2 text-xs font-bold text-red-300 flex items-center gap-1 hover:text-white transition-colors">
+            <span>🏠 返回主選單</span>
+        </button>
+    </div>
+
+    <!-- 選單 Overlay -->
+    <div id="menuOverlay" class="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center z-50 p-6">
+        <div class="glass p-8 rounded-[32px] shadow-2xl max-w-sm w-full text-center border-2 border-red-500/50">
+            <div class="text-6xl mb-4 animate-bounce">🍲</div>
+            <h1 class="text-3xl font-black text-red-400 mb-2">台南牛肉湯火候師</h1>
+            <p class="text-stone-300 text-xs mb-6 leading-relaxed">
+                台南牛肉湯的美味秘訣：將滾燙高湯澆在鮮紅生牛肉上！長按澆湯按鈕為客人烹煮牛肉，牛肉熟度會從生肉(紅)轉為完美粉紅(三分熟)。抓準指針停在完美區間的時機放開按鈕出餐！太生或過熟客人都會生氣喔！
+            </p>
+
+            <!-- 設定區 -->
+            <div class="space-y-4 mb-6 bg-stone-950/60 p-4 rounded-2xl border border-red-500/20 text-left text-sm">
+                <div class="flex flex-col gap-1">
+                    <div class="flex justify-between font-bold text-red-300">
+                        <span>營業限時</span>
+                        <span id="timeValue">60秒</span>
+                    </div>
+                    <input type="range" id="timeSetting" min="30" max="120" step="10" value="60" class="w-full h-1.5 bg-stone-950 rounded-lg appearance-none cursor-pointer accent-red-500">
+                </div>
+                <div class="flex flex-col gap-1">
+                    <div class="flex justify-between font-bold text-red-300">
+                        <span>顧客耐心速度</span>
+                        <span id="patienceValue">普通</span>
+                    </div>
+                    <input type="range" id="patienceSetting" min="1" max="3" step="1" value="2" class="w-full h-1.5 bg-stone-950 rounded-lg appearance-none cursor-pointer accent-red-500">
+                </div>
+            </div>
+
+            <!-- 結算顯示 -->
+            <div id="finalScoreArea" class="hidden mb-6 p-4 bg-red-500/10 rounded-2xl border border-red-500/30">
+                <p class="text-red-400 text-[10px] font-black tracking-wider uppercase mb-1">今日總營業額</p>
+                <p id="finalScore" class="text-4xl font-black text-red-300">$0</p>
+                <p id="finalComment" class="text-xs text-stone-300 font-bold mt-1">評價：小攤新星</p>
+            </div>
+
+            <button id="startBtn" class="btn-red w-full py-4 rounded-xl text-lg shadow-lg">
+                開始營業
+            </button>
+        </div>
+    </div>
+
+    <!-- Web Audio & 遊戲邏輯 -->
+    <script>
+        const AudioSynth = {
+            ctx: null,
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            },
+            play(type) {
+                this.init();
+                if (!this.ctx) return;
+                
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                if (type === 'pour') {
+                    // 水流澆注白噪音
+                    // 用低頻正弦波稍微顫動模擬
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(80, now);
+                    osc.frequency.linearRampToValueAtTime(120, now + 0.15);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+                    osc.start(now);
+                    osc.stop(now + 0.15);
+                } else if (type === 'perfect') {
+                    // 完美出餐 (叮咚鈴)
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(523.25, now); // C5
+                    osc.frequency.setValueAtTime(659.25, now + 0.08); // E5
+                    osc.frequency.setValueAtTime(783.99, now + 0.16); // G5
+                    osc.frequency.setValueAtTime(1046.50, now + 0.24); // C6
+                    gain.gain.setValueAtTime(0.3, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+                    osc.start(now);
+                    osc.stop(now + 0.4);
+                } else if (type === 'normal') {
+                    // 普通出餐 (叮)
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(523.25, now); // C5
+                    gain.gain.setValueAtTime(0.25, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+                    osc.start(now);
+                    osc.stop(now + 0.25);
+                } else if (type === 'bad') {
+                    // 出錯/太生/過熟 (低沉嗡嗡聲)
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(150, now);
+                    osc.frequency.linearRampToValueAtTime(100, now + 0.4);
+                    gain.gain.setValueAtTime(0.4, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+                    osc.start(now);
+                    osc.stop(now + 0.4);
+                }
+            }
+        };
+
+        const scoreLabel = document.getElementById('scoreLabel');
+        const comboLabel = document.getElementById('comboLabel');
+        const timerLabel = document.getElementById('timerLabel');
+        const customerZone = document.getElementById('customerZone');
+        const soupBroth = document.getElementById('soupBroth');
+        const cookStatus = document.getElementById('cookStatus');
+        const pourBtn = document.getElementById('pourBtn');
+        const steamContainer = document.getElementById('steamContainer');
+        const gaugePointer = document.getElementById('gaugePointer');
+        const inGameResetBtn = document.getElementById('inGameResetBtn');
+
+        const menuOverlay = document.getElementById('menuOverlay');
+        const startBtn = document.getElementById('startBtn');
+        const timeSetting = document.getElementById('timeSetting');
+        const patienceSetting = document.getElementById('patienceSetting');
+        const timeValueDisplay = document.getElementById('timeValue');
+        const patienceValueDisplay = document.getElementById('patienceValue');
+        
+        const finalScoreArea = document.getElementById('finalScoreArea');
+        const finalScore = document.getElementById('finalScore');
+        const finalComment = document.getElementById('finalComment');
+
+        const patienceNames = ["緩慢", "普通", "狂躁"];
+        patienceSetting.oninput = () => patienceValueDisplay.innerText = patienceNames[patienceSetting.value - 1];
+        timeSetting.oninput = () => timeValueDisplay.innerText = `${timeSetting.value}秒`;
+
+        let isPlaying = false;
+        let score = 0;
+        let combo = 0;
+        let timeLeft = 60;
+        let timerInterval = null;
+        let gameLoopInterval = null;
+
+        let cookProgress = 0; // 0 ~ 100
+        let isPouring = false;
+        
+        let currentCustomer = null;
+        let customerPatience = 100;
+        let customerPatienceSpeed = 0.5;
+
+        // 啟動遊戲
+        startBtn.onclick = () => {
+            AudioSynth.init();
+            score = 0;
+            combo = 0;
+            timeLeft = parseInt(timeSetting.value);
+            isPlaying = true;
+            
+            const patienceLvl = parseInt(patienceSetting.value);
+            customerPatienceSpeed = patienceLvl === 1 ? 0.3 : patienceLvl === 2 ? 0.5 : 0.8;
+
+            menuOverlay.classList.add('hidden');
+            updateHUD();
+            resetBowl();
+            spawnCustomer();
+            startTimer();
+            startGameLoop();
+        };
+
+        inGameResetBtn.onclick = () => {
+            endGame();
+        };
+
+        // 按鈕長按事件 (支援滑鼠與觸控)
+        const startPour = (e) => {
+            if (!isPlaying || !currentCustomer) return;
+            isPouring = true;
+            e.preventDefault();
+        };
+
+        const stopPour = (e) => {
+            if (!isPlaying || !isPouring) return;
+            isPouring = false;
+            serveSoup();
+            e.preventDefault();
+        };
+
+        pourBtn.addEventListener('mousedown', startPour);
+        pourBtn.addEventListener('mouseup', stopPour);
+        pourBtn.addEventListener('mouseleave', stopPour);
+        pourBtn.addEventListener('touchstart', startPour);
+        pourBtn.addEventListener('touchend', stopPour);
+
+        function startTimer() {
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                if (!isPlaying) return;
+                timeLeft--;
+                timerLabel.innerText = `${timeLeft}s`;
+                if (timeLeft <= 5) {
+                    timerLabel.className = "text-xl font-black text-red-500 animate-pulse";
+                } else {
+                    timerLabel.className = "text-xl font-black text-white";
+                }
+
+                if (timeLeft <= 0) {
+                    endGame();
+                }
+            }, 1000);
+        }
+
+        function updateHUD() {
+            scoreLabel.innerText = `$${score}`;
+            comboLabel.innerText = combo;
+        }
+
+        function resetBowl() {
+            cookProgress = 0;
+            soupBroth.style.opacity = 0;
+            soupBroth.style.backgroundColor = '#2d2219';
+            gaugePointer.style.left = '12%';
+            cookStatus.innerText = '按住「澆入高湯」為牛肉加熱熟成';
+            cookStatus.className = "mt-4 text-sm font-bold text-red-300";
+
+            // 牛肉切片變回生紅
+            const slices = document.querySelectorAll('.beef-slice');
+            slices.forEach(slice => {
+                slice.style.backgroundColor = '#dc2626'; // 生紅
+            });
+        }
+
+        function spawnCustomer() {
+            const emojis = ['👨‍💼', '👩‍🎓', '🧔', '👩‍🍳', '👴', '👧'];
+            const names = ['上班族', '學生妹', '大叔', '廚師阿姨', '老伯伯', '小妹妹'];
+            const randIdx = Math.floor(Math.random() * emojis.length);
+
+            currentCustomer = {
+                emoji: emojis[randIdx],
+                name: names[randIdx],
+                patience: 100
+            };
+            drawCustomer();
+        }
+
+        function drawCustomer() {
+            if (!currentCustomer) {
+                customerZone.innerHTML = '';
+                return;
+            }
+
+            customerZone.innerHTML = `
+                <div class="flex items-center gap-4 w-full justify-between max-w-xs">
+                    <div class="text-4xl">${currentCustomer.emoji}</div>
+                    <div class="flex-1">
+                        <div class="flex justify-between text-xs font-bold text-stone-300">
+                            <span>${currentCustomer.name}</span>
+                            <span class="text-orange-400">想喝熱騰騰牛肉湯</span>
+                        </div>
+                        <div class="w-full bg-stone-900 h-2 rounded-full border border-stone-800 mt-1 overflow-hidden">
+                            <div id="patienceBar" class="h-full bg-green-500" style="width: ${currentCustomer.patience}%"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function startGameLoop() {
+            clearInterval(gameLoopInterval);
+            gameLoopInterval = setInterval(() => {
+                if (!isPlaying) return;
+
+                // 1. 更新顧客耐心
+                if (currentCustomer) {
+                    currentCustomer.patience -= customerPatienceSpeed;
+                    const patienceBar = document.getElementById('patienceBar');
+                    if (patienceBar) {
+                        patienceBar.style.width = `${currentCustomer.patience}%`;
+                        if (currentCustomer.patience < 30) {
+                            patienceBar.classList.replace('bg-green-500', 'bg-red-500');
+                        } else if (currentCustomer.patience < 65) {
+                            patienceBar.classList.replace('bg-green-500', 'bg-yellow-500');
+                        }
+                    }
+
+                    if (currentCustomer.patience <= 0) {
+                        AudioSynth.play('bad');
+                        combo = 0;
+                        updateHUD();
+                        cookStatus.innerText = '顧客等太久，氣呼呼地走了！';
+                        cookStatus.className = "mt-4 text-sm font-bold text-red-500";
+                        currentCustomer = null;
+                        setTimeout(() => {
+                            spawnCustomer();
+                            resetBowl();
+                        }, 1200);
+                    }
+                }
+
+                // 2. 澆湯時更新進度
+                if (isPouring && currentCustomer) {
+                    cookProgress += 1.8;
+                    if (cookProgress > 100) cookProgress = 100;
+                    
+                    AudioSynth.play('pour');
+                    createSteam();
+
+                    // 更新溫度指針 (Gauge 範圍在 left 12% 到 88%)
+                    const pLeft = 12 + (cookProgress / 100) * 76;
+                    gaugePointer.style.left = `${pLeft}%`;
+
+                    // 更新高湯透明度與顏色
+                    soupBroth.style.opacity = Math.min(1, cookProgress / 50);
+                    
+                    // 牛肉熟度與顏色變化
+                    const slices = document.querySelectorAll('.beef-slice');
+                    if (cookProgress < 40) {
+                        // 生紅
+                        cookStatus.innerText = '高湯注入中...牛肉還太生！';
+                        cookStatus.className = "mt-4 text-sm font-bold text-red-400";
+                    } else if (cookProgress >= 40 && cookProgress <= 75) {
+                        // 完美粉紅
+                        cookStatus.innerText = '完美三分熟！快放開出餐！';
+                        cookStatus.className = "mt-4 text-sm font-bold text-green-400 animate-pulse";
+                        slices.forEach(slice => {
+                            slice.style.backgroundColor = '#fda4af'; // 粉紅
+                        });
+                    } else if (cookProgress > 75 && cookProgress < 95) {
+                        // 全熟褐
+                        cookStatus.innerText = '糟糕！牛肉全熟老掉了！';
+                        cookStatus.className = "mt-4 text-sm font-bold text-yellow-500";
+                        slices.forEach(slice => {
+                            slice.style.backgroundColor = '#a8a29e'; // 褐灰
+                        });
+                    } else {
+                        // 燒焦黑
+                        cookStatus.innerText = '煮爛了！牛肉成肉乾！';
+                        cookStatus.className = "mt-4 text-sm font-bold text-red-600";
+                        slices.forEach(slice => {
+                            slice.style.backgroundColor = '#44403c'; // 焦黑
+                        });
+                    }
+                }
+            }, 50);
+        }
+
+        // 產生湯氣蒸氣
+        function createSteam() {
+            const steam = document.createElement('div');
+            steam.className = 'steam';
+            steam.style.left = `${30 + Math.random() * 40}%`;
+            steam.style.top = `${60 + Math.random() * 20}%`;
+            steamContainer.appendChild(steam);
+            setTimeout(() => steam.remove(), 1500);
+        }
+
+        // 出餐
+        function serveSoup() {
+            if (!currentCustomer) return;
+
+            let earnings = 0;
+            let currentStatus = '';
+            let isPerfect = false;
+
+            if (cookProgress < 40) {
+                // 太生
+                AudioSynth.play('bad');
+                currentStatus = '牛肉還完全是生的！客人拒吃！';
+                combo = 0;
+            } else if (cookProgress >= 40 && cookProgress <= 75) {
+                // 完美三分熟
+                AudioSynth.play('perfect');
+                earnings = 100 + combo * 10;
+                combo++;
+                isPerfect = true;
+                currentStatus = `太美味了！完美溫度的牛肉湯！+$${earnings}`;
+            } else if (cookProgress > 75 && cookProgress < 95) {
+                // 太老
+                AudioSynth.play('normal');
+                earnings = 40;
+                combo = 0;
+                currentStatus = `牛肉煮得有點老，肉質變硬了。+$${earnings}`;
+            } else {
+                // 爛掉
+                AudioSynth.play('bad');
+                combo = 0;
+                currentStatus = '牛肉完全被燙爛了！客人給了差評。';
+            }
+
+            score += earnings;
+            updateHUD();
+
+            cookStatus.innerText = currentStatus;
+            cookStatus.className = isPerfect 
+                ? "mt-4 text-sm font-black text-yellow-300 scale-105 transition-all"
+                : "mt-4 text-sm font-bold text-stone-300";
+
+            currentCustomer = null;
+            drawCustomer();
+
+            // 成功粒子灑出
+            if (earnings > 0) {
+                createDishParticles(isPerfect ? '#facc15' : '#a8a29e');
+            }
+
+            setTimeout(() => {
+                if (isPlaying) {
+                    spawnCustomer();
+                    resetBowl();
+                }
+            }, 1500);
+        }
+
+        function createDishParticles(color) {
+            for (let i = 0; i < 15; i++) {
+                const p = document.createElement('div');
+                p.className = 'fixed rounded-full pointer-events-none z-50';
+                p.style.width = '8px';
+                p.style.height = '8px';
+                p.style.backgroundColor = color;
+                p.style.left = '50%';
+                p.style.top = '50%';
+
+                const angle = Math.random() * Math.PI * 2;
+                const speed = 3 + Math.random() * 6;
+                const vx = Math.cos(angle) * speed;
+                const vy = Math.sin(angle) * speed - 2;
+
+                document.body.appendChild(p);
+
+                let opacity = 1;
+                let px = window.innerWidth / 2;
+                let py = window.innerHeight / 2;
+
+                const anim = () => {
+                    if (opacity <= 0) {
+                        p.remove();
+                        return;
+                    }
+                    opacity -= 0.04;
+                    px += vx;
+                    py += vy + 0.15;
+                    p.style.left = `${px}px`;
+                    p.style.top = `${py}px`;
+                    p.style.opacity = opacity;
+                    requestAnimationFrame(anim);
+                };
+                requestAnimationFrame(anim);
+            }
+        }
+
+        function endGame() {
+            isPlaying = false;
+            isPouring = false;
+            clearInterval(timerInterval);
+            clearInterval(gameLoopInterval);
+
+            finalScore.innerText = `$${score}`;
+
+            let comment = "有潛力！多抓抓澆湯的火候！👨‍🍳";
+            if (score >= 600) {
+                comment = "國宴級大師！台南牛肉湯之神！👑";
+            } else if (score >= 300) {
+                comment = "排隊名店！食客絡繹不絕！👍";
+            }
+            finalComment.innerText = `評價：${comment}`;
+
+            finalScoreArea.classList.remove('hidden');
+            menuOverlay.classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>

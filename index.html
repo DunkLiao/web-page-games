@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>電子遊戲間</title>
+    <title>電子遊戲間 - VibeCoding Arcade</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
@@ -12,9 +12,8 @@
         }
 
         body {
-            background: radial-gradient(circle at top, rgba(255, 215, 0, 0.12) 0%, rgba(255, 215, 0, 0) 45%),
-                        radial-gradient(circle at 80% 20%, rgba(0, 255, 240, 0.15) 0%, rgba(0, 255, 240, 0) 40%),
-                        linear-gradient(160deg, #0a0b10 0%, #151328 55%, #0b0b12 100%);
+            background: radial-gradient(circle at top, rgba(255, 215, 0, 0.12) 0%, rgba(0, 255, 240, 0.05) 45%),
+                        linear-gradient(160deg, #07080c 0%, #0f0d1a 55%, #050508 100%);
             min-height: 100vh;
             color: #f8fafc;
         }
@@ -22,10 +21,10 @@
         .neon-grid {
             position: fixed;
             inset: 0;
-            background-image: linear-gradient(rgba(0, 255, 240, 0.08) 1px, transparent 1px),
-                              linear-gradient(90deg, rgba(0, 255, 240, 0.08) 1px, transparent 1px);
+            background-image: linear-gradient(rgba(0, 255, 240, 0.05) 1px, transparent 1px),
+                              linear-gradient(90deg, rgba(0, 255, 240, 0.05) 1px, transparent 1px);
             background-size: 60px 60px;
-            mask-image: radial-gradient(circle at 50% 20%, rgba(0, 0, 0, 0.9), transparent 65%);
+            mask-image: radial-gradient(circle at 50% 20%, rgba(0, 0, 0, 0.9), transparent 75%);
             opacity: 0.7;
             pointer-events: none;
             z-index: 0;
@@ -34,7 +33,7 @@
         .scanline {
             position: fixed;
             inset: 0;
-            background: repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0px, rgba(255, 255, 255, 0.03) 1px, transparent 1px, transparent 4px);
+            background: repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.02) 0px, rgba(255, 255, 255, 0.02) 1px, transparent 1px, transparent 4px);
             mix-blend-mode: soft-light;
             opacity: 0.6;
             pointer-events: none;
@@ -42,11 +41,11 @@
         }
 
         .card {
-            background: linear-gradient(180deg, rgba(12, 13, 24, 0.95) 0%, rgba(16, 18, 34, 0.88) 100%);
-            border: 2px solid rgba(0, 255, 240, 0.5);
+            background: linear-gradient(180deg, rgba(12, 13, 24, 0.96) 0%, rgba(16, 18, 34, 0.92) 100%);
+            border: 2px solid rgba(0, 255, 240, 0.35);
             border-radius: 18px;
-            transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
-            box-shadow: 0 0 24px rgba(0, 255, 240, 0.15), inset 0 0 24px rgba(255, 215, 0, 0.08);
+            transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), box-shadow 0.3s ease, border-color 0.3s ease;
+            box-shadow: 0 0 20px rgba(0, 255, 240, 0.08), inset 0 0 20px rgba(255, 215, 0, 0.05);
             position: relative;
             overflow: hidden;
         }
@@ -55,15 +54,16 @@
             content: '';
             position: absolute;
             inset: 0;
-            background: linear-gradient(120deg, transparent 0%, rgba(255, 215, 0, 0.12) 40%, transparent 70%);
+            background: linear-gradient(120deg, transparent 0%, rgba(255, 215, 0, 0.08) 40%, transparent 70%);
             opacity: 0;
             transition: opacity 0.3s ease;
+            pointer-events: none;
         }
 
         .card:hover {
-            transform: translateY(-6px) scale(1.01);
-            border-color: rgba(255, 215, 0, 0.9);
-            box-shadow: 0 0 32px rgba(255, 215, 0, 0.35), 0 18px 36px rgba(0, 255, 240, 0.25);
+            transform: translateY(-5px) scale(1.01);
+            border-color: rgba(255, 215, 0, 0.8);
+            box-shadow: 0 0 28px rgba(255, 215, 0, 0.25), 0 15px 30px rgba(0, 255, 240, 0.18);
         }
 
         .card:hover::after {
@@ -71,12 +71,9 @@
         }
 
         .btn-play {
-            background: linear-gradient(135deg, #facc15 0%, #f97316 100%);
             transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
             position: relative;
             overflow: hidden;
-            border: 2px solid rgba(255, 215, 0, 0.9);
-            color: #100b1f;
             text-transform: uppercase;
             letter-spacing: 0.08em;
         }
@@ -88,7 +85,7 @@
             left: -120%;
             width: 100%;
             height: 100%;
-            background: linear-gradient(120deg, transparent 0%, rgba(255, 255, 255, 0.6) 50%, transparent 100%);
+            background: linear-gradient(120deg, transparent 0%, rgba(255, 255, 255, 0.5) 50%, transparent 100%);
             transition: left 0.45s ease;
         }
 
@@ -97,36 +94,25 @@
         }
 
         .btn-play:hover {
-            transform: scale(1.05);
-            box-shadow: 0 0 24px rgba(250, 204, 21, 0.7), 0 0 40px rgba(0, 255, 240, 0.4);
-            border-color: rgba(0, 255, 240, 0.8);
-            background: linear-gradient(135deg, #22d3ee 0%, #38bdf8 100%);
+            transform: scale(1.03);
         }
 
         .game-icon {
-            font-size: 4rem;
-            margin-bottom: 1rem;
+            font-size: 3.5rem;
+            margin-bottom: 0.75rem;
             display: inline-block;
-            animation: float 3.5s ease-in-out infinite, glow 2.5s ease-in-out infinite;
-            filter: drop-shadow(0 0 12px rgba(0, 255, 240, 0.7));
+            animation: float 4s ease-in-out infinite alternate, glow 3s ease-in-out infinite;
+            filter: drop-shadow(0 0 10px rgba(0, 255, 240, 0.5));
         }
 
         @keyframes float {
-            0%, 100% {
-                transform: translateY(0px);
-            }
-            50% {
-                transform: translateY(-10px);
-            }
+            0% { transform: translateY(0px); }
+            100% { transform: translateY(-8px); }
         }
 
         @keyframes glow {
-            0%, 100% {
-                filter: drop-shadow(0 0 10px rgba(0, 212, 255, 0.6));
-            }
-            50% {
-                filter: drop-shadow(0 0 20px rgba(255, 0, 110, 0.8));
-            }
+            0%, 100% { filter: drop-shadow(0 0 8px rgba(0, 212, 255, 0.5)); }
+            50% { filter: drop-shadow(0 0 16px rgba(255, 0, 110, 0.7)); }
         }
 
         .header-title {
@@ -134,31 +120,36 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            text-shadow: 0 0 32px rgba(250, 204, 21, 0.45);
+            text-shadow: 0 0 32px rgba(250, 204, 21, 0.3);
             letter-spacing: 0.08em;
         }
 
         .marquee {
-            border: 2px solid rgba(250, 204, 21, 0.6);
+            border: 2px solid rgba(250, 204, 21, 0.5);
             border-radius: 999px;
             padding: 0.35rem 1.5rem;
             color: #facc15;
             text-transform: uppercase;
             letter-spacing: 0.2em;
-            box-shadow: 0 0 18px rgba(250, 204, 21, 0.3);
+            box-shadow: 0 0 15px rgba(250, 204, 21, 0.2);
         }
 
-        .section-card {
-            background: linear-gradient(180deg, rgba(14, 18, 32, 0.92) 0%, rgba(12, 14, 26, 0.96) 100%);
-            border: 2px solid rgba(0, 255, 240, 0.4);
+        .tab-btn {
+            transition: all 0.3s ease;
+            border: 1px solid rgba(0, 255, 240, 0.2);
         }
 
-        .footer {
-            color: rgba(250, 204, 21, 0.7);
-            text-align: center;
-            margin-top: 3rem;
-            font-size: 0.875rem;
-            text-shadow: 0 0 10px rgba(250, 204, 21, 0.35);
+        .tab-btn.active {
+            background: linear-gradient(135deg, #22d3ee, #0ea5e9);
+            color: #07080c;
+            border-color: #22d3ee;
+            box-shadow: 0 0 15px rgba(34, 211, 238, 0.4);
+            font-weight: 900;
+        }
+
+        .tab-btn:hover:not(.active) {
+            border-color: rgba(34, 211, 238, 0.8);
+            background: rgba(34, 211, 238, 0.08);
         }
     </style>
 </head>
@@ -166,8 +157,9 @@
     <div class="neon-grid"></div>
     <div class="scanline"></div>
     <div class="min-h-screen flex flex-col items-center justify-center p-4 py-12 relative z-10">
+        
         <!-- 標題區域 -->
-        <div class="text-center mb-12">
+        <div class="text-center mb-8">
             <div class="text-6xl mb-4">🕹️</div>
             <h1 class="header-title text-5xl md:text-6xl font-black mb-4">電子遊戲間</h1>
             <div class="marquee text-xs md:text-sm inline-flex items-center gap-2">
@@ -177,422 +169,545 @@
             </div>
         </div>
 
+        <!-- 搜尋與分類選單 -->
+        <div class="w-full max-w-5xl flex flex-col md:flex-row gap-4 justify-between items-center mb-8">
+            <!-- 搜尋框 -->
+            <div class="relative w-full md:w-80">
+                <input type="text" id="searchInput" placeholder="搜尋遊戲名稱或關鍵字..." 
+                       class="w-full bg-slate-900/80 border-2 border-cyan-500/40 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-400 placeholder-slate-500 transition-colors">
+                <span class="absolute right-3 top-3 text-slate-500">🔍</span>
+            </div>
+
+            <!-- 分類標籤 (Tabs) -->
+            <div class="flex flex-wrap gap-2 justify-center">
+                <button onclick="filterCategory('all')" id="tab-all" class="tab-btn active px-5 py-2.5 rounded-xl text-sm">全部遊戲</button>
+                <button onclick="filterCategory('culture')" id="tab-culture" class="tab-btn px-5 py-2.5 rounded-xl text-sm text-cyan-400">在地文化</button>
+                <button onclick="filterCategory('nightmarket')" id="tab-nightmarket" class="tab-btn px-5 py-2.5 rounded-xl text-sm text-cyan-400">夜市遊樂</button>
+                <button onclick="filterCategory('action')" id="tab-action" class="tab-btn px-5 py-2.5 rounded-xl text-sm text-cyan-400">動作挑戰</button>
+            </div>
+        </div>
+
         <!-- 遊戲卡片容器 -->
-        <div class="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
-
-            <!-- 遊戲卡片 1: 貓與鼠 -->
-            <div class="card p-6 flex flex-col">
-                <div class="flex-1">
-                    <div class="game-icon">🐱🐭</div>
-                    <h2 class="text-2xl font-black mb-2" style="color: #facc15;">貓與鼠</h2>
-                    <p class="text-sm mb-4 leading-relaxed" style="color: #d1d5f9;">
-                        在靜謐的草坪上展開追逐冒險。通過操控貓咪捕捉老鼠，收集分數！
-                    </p>
-                    <div class="space-y-2 text-sm mb-6" style="color: #22d3ee;">
-                        <p>⏱️ <span class="font-semibold">遊戲時間</span>: 自訂 10-120 秒</p>
-                        <p>🎯 <span class="font-semibold">目標</span>: 盡可能多地捕捉老鼠</p>
-                        <p>📱 <span class="font-semibold">支援</span>: 電腦 / 手機</p>
-                    </div>
-                </div>
-                <a href="CatchCatGames.html" class="btn-play text-white font-bold py-3 px-6 rounded-lg w-full text-center inline-block relative z-10">
-                    開始遊戲 →
-                </a>
-            </div>
-
-            <!-- 遊戲卡片 2: 櫻花祭特急 - 迴轉壽司 -->
-            <div class="card p-6 flex flex-col">
-                <div class="flex-1">
-                    <div class="game-icon">🍣🌸</div>
-                    <h2 class="text-2xl font-black mb-2" style="color: #f97316;">櫻花祭特急 - 迴轉壽司</h2>
-                    <p class="text-sm mb-4 leading-relaxed" style="color: #fde68a;">
-                        在櫻花盛開的春日，挑戰限時收集壽司並避開障礙，享受迴轉壽司的樂趣！
-                    </p>
-                    <div class="space-y-2 text-sm mb-6" style="color: #22d3ee;">
-                        <p>⏱️ <span class="font-semibold">遊戲時間</span>: 30-120 秒</p>
-                        <p>🎯 <span class="font-semibold">目標</span>: 收集指定數量壽司，避開障礙</p>
-                        <p>📱 <span class="font-semibold">支援</span>: 手機 / 電腦</p>
-                    </div>
-                </div>
-                <a href="SusiRow.html" class="btn-play text-white font-bold py-3 px-6 rounded-lg w-full text-center inline-block relative z-10" style="background: linear-gradient(135deg, #f97316 0%, #facc15 100%); border-color: #facc15;">
-                    開始遊戲 →
-                </a>
-            </div>
-
-            <!-- 遊戲卡片 3: 撿紅點 - 大正浪漫綺譚 -->
-            <div class="card p-6 flex flex-col">
-                <div class="flex-1">
-                    <div class="game-icon">🎴🀄</div>
-                    <h2 class="text-2xl font-black mb-2" style="color: #facc15;">撿紅點 - 大正浪漫綺譚</h2>
-                    <p class="text-sm mb-4 leading-relaxed" style="color: #fef3c7;">
-                        復古大正風格的撿紅點紙牌遊戲。與AI對戰，透過配對獲取紅色花色的分數！
-                    </p>
-                    <div class="space-y-2 text-sm mb-6" style="color: #22d3ee;">
-                        <p>🎯 <span class="font-semibold">目標</span>: 配對牌組獲取紅色牌分數</p>
-                        <p>🃏 <span class="font-semibold">規則</span>: 小牌和為10，大牌點數相同</p>
-                        <p>🎭 <span class="font-semibold">局數</span>: 1局 / 3局 / 5局制</p>
-                    </div>
-                </div>
-                <a href="PickRedPocker.html" class="btn-play text-white font-bold py-3 px-6 rounded-lg w-full text-center inline-block relative z-10" style="background: linear-gradient(135deg, #facc15 0%, #f97316 100%); border-color: #facc15;">
-                    開始遊戲 →
-                </a>
-            </div>
-
-            <!-- 遊戲卡片 4: 夏日邦迪海灘丟水球 -->
-            <div class="card p-6 flex flex-col">
-                <div class="flex-1">
-                    <div class="game-icon">🏖️💦</div>
-                    <h2 class="text-2xl font-black mb-2" style="color: #22d3ee;">夏日邦迪海灘丟水球</h2>
-                    <p class="text-sm mb-4 leading-relaxed" style="color: #dbeafe;">
-                        在邦迪海灘丟水球擊落 VB 啤酒罐！可調整移動速度、水球下墜重力與左右風向飄移，考驗反應與命中率。
-                    </p>
-                    <div class="space-y-2 text-sm mb-6" style="color: #22d3ee;">
-                        <p>🎯 <span class="font-semibold">目標</span>: 命中 VB 罐並刷新最高分</p>
-                        <p>🧮 <span class="font-semibold">機制</span>: 命中加分、補給彈藥、動態難度提升</p>
-                        <p>📱 <span class="font-semibold">支援</span>: 電腦 / 手機</p>
-                    </div>
-                </div>
-                <a href="bondi-vb-toss.html" class="btn-play text-white font-bold py-3 px-6 rounded-lg w-full text-center inline-block relative z-10" style="background: linear-gradient(135deg, #22d3ee 0%, #38bdf8 100%); border-color: #22d3ee;">
-                    開始遊戲 →
-                </a>
-            </div>
-
-            <!-- 遊戲卡片 5: 苦力怕紅綠燈 -->
-            <div class="card p-6 flex flex-col">
-                <div class="flex-1">
-                    <div class="game-icon">🧨🧟‍♂️</div>
-                    <h2 class="text-2xl font-black mb-2" style="color: #4de64d;">苦力怕紅綠燈：爆炸版</h2>
-                    <p class="text-sm mb-4 leading-relaxed" style="color: #d1fae5;">
-                        像素風紅綠燈挑戰。綠燈長按前進，紅燈移動就會爆炸，抵達終點即勝利並灑花！
-                    </p>
-                    <div class="space-y-2 text-sm mb-6" style="color: #22d3ee;">
-                        <p>⏱️ <span class="font-semibold">節奏</span>: 隨機紅綠燈切換</p>
-                        <p>🎯 <span class="font-semibold">目標</span>: 抵達終點線</p>
-                        <p>🕹️ <span class="font-semibold">操作</span>: 長按/按住前進</p>
-                    </div>
-                </div>
-                <a href="creeper_run.html" class="btn-play text-white font-bold py-3 px-6 rounded-lg w-full text-center inline-block relative z-10" style="background: linear-gradient(135deg, #4de64d 0%, #22c55e 100%); border-color: #4de64d;">
-                    開始遊戲 →
-                </a>
-            </div>
-
-            <!-- 遊戲卡片 6: 終界龍慢速降臨 -->
-            <div class="card p-6 flex flex-col">
-                <div class="flex-1">
-                    <div class="game-icon">🐉🐱</div>
-                    <h2 class="text-2xl font-black mb-2" style="color: #c084fc;">方塊貓咪牧場：終界龍慢速降臨</h2>
-                    <p class="text-sm mb-4 leading-relaxed" style="color: #e9d5ff;">
-                        點擊生成貓咪、感受天色漸暗。貓咪多了會召喚鐵巨人，第三次巡場將迎來終界龍緩慢降臨。
-                    </p>
-                    <div class="space-y-2 text-sm mb-6" style="color: #a5f3fc;">
-                        <p>⏱️ <span class="font-semibold">閒置</span>: 5 分鐘進入好夢結算</p>
-                        <p>🎯 <span class="font-semibold">目標</span>: 觸發終界龍降臨</p>
-                        <p>🧱 <span class="font-semibold">風格</span>: Minecraft 像素牧場</p>
-                    </div>
-                </div>
-                <a href="ender_dragon_sleep.html" class="btn-play text-white font-bold py-3 px-6 rounded-lg w-full text-center inline-block relative z-10" style="background: linear-gradient(135deg, #c084fc 0%, #8b5cf6 100%); border-color: #c084fc;">
-                    開始遊戲 →
-                </a>
-            </div>
-
-            <!-- 遊戲卡片 7: 吉伊卡哇拔草大衝刺 -->
-            <div class="card p-6 flex flex-col">
-                <div class="flex-1">
-                    <div class="game-icon">🐱🚙</div>
-                    <h2 class="text-2xl font-black mb-2" style="color: #fda4af;">吉伊卡哇：小藍車拔草大衝刺</h2>
-                    <p class="text-sm mb-4 leading-relaxed" style="color: #fecdd3;">
-                        五軌道躲避衝刺遊戲。調整衝刺速度與討伐頻率，閃避障礙、衝高分數！
-                    </p>
-                    <div class="space-y-2 text-sm mb-6" style="color: #a7f3d0;">
-                        <p>🎯 <span class="font-semibold">目標</span>: 躲避障礙並累積最高分</p>
-                        <p>🛠️ <span class="font-semibold">設定</span>: 速度與討伐頻率可調</p>
-                        <p>📱 <span class="font-semibold">支援</span>: 手機 / 電腦</p>
-                    </div>
-                </div>
-                <a href="chiikawa_weeding_dash.html" class="btn-play text-white font-bold py-3 px-6 rounded-lg w-full text-center inline-block relative z-10" style="background: linear-gradient(135deg, #fda4af 0%, #fb7185 100%); border-color: #fda4af;">
-                    開始遊戲 →
-                </a>
-            </div>
-
-            <!-- 遊戲卡片 8: 肥尾大冒險 -->
-            <div class="card p-6 flex flex-col">
-                <div class="flex-1">
-                    <div class="game-icon">🦎🐛</div>
-                    <h2 class="text-2xl font-black mb-2" style="color: #fbbf24;">肥尾大冒險：豹紋守宮的蟲蟲計時賽</h2>
-                    <p class="text-sm mb-4 leading-relaxed" style="color: #fde68a;">
-                        迷宮計時挑戰，操控豹紋守宮尋找麵包蟲。關卡越高越刺激，手速與記憶力大考驗！
-                    </p>
-                    <div class="space-y-2 text-sm mb-6" style="color: #22d3ee;">
-                        <p>⏱️ <span class="font-semibold">計時</span>: 從第一步開始倒數挑戰</p>
-                        <p>🎯 <span class="font-semibold">目標</span>: 抵達終點吃到麵包蟲</p>
-                        <p>🧩 <span class="font-semibold">難度</span>: 簡單 / 普通 / 困難</p>
-                    </div>
-                </div>
-                <a href="fat_tail_gecko_race.html" class="btn-play text-white font-bold py-3 px-6 rounded-lg w-full text-center inline-block relative z-10" style="background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); border-color: #fbbf24;">
-                    開始遊戲 →
-                </a>
-            </div>
-
-            <!-- 遊戲卡片 9: 釜山大發：札嘎其金網大冒險 -->
-            <div class="card p-6 flex flex-col">
-                <div class="flex-1">
-                    <div class="game-icon">⚓🐟</div>
-                    <h2 class="text-2xl font-black mb-2" style="color: #fbbf24;">釜山大發：札嘎其金網大冒險</h2>
-                    <p class="text-sm mb-4 leading-relaxed" style="color: #fde68a;">
-                        韓式海港風九宮格拉霸。投網捕魚觸發連線獎勵，體驗大發連勝與震撼特效！
-                    </p>
-                    <div class="space-y-2 text-sm mb-6" style="color: #22d3ee;">
-                        <p>🎯 <span class="font-semibold">目標</span>: 命中三連線拿高倍率獎金</p>
-                        <p>🧮 <span class="font-semibold">機制</span>: 可調下注額、動態高分</p>
-                        <p>🎰 <span class="font-semibold">模式</span>: 九宮格拉霸</p>
-                    </div>
-                </div>
-                <a href="busan_jagalchi_deluxe.html" class="btn-play text-white font-bold py-3 px-6 rounded-lg w-full text-center inline-block relative z-10" style="background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); border-color: #fbbf24;">
-                    開始遊戲 →
-                </a>
-            </div>
-
-            <!-- 遊戲卡片 10: 普通兄妹的搞笑對決 -->
-            <div class="card p-6 flex flex-col">
-                <div class="flex-1">
-                    <div class="game-icon">👦👧</div>
-                    <h2 class="text-2xl font-black mb-2" style="color: #ff4081;">普通兄妹的搞笑對決</h2>
-                    <p class="text-sm mb-4 leading-relaxed" style="color: #fce4ec;">
-                        漫畫風格的打地鼠遊戲。9個洞口、兄妹角色隨機跳出，快速點擊得分，考驗反應力！
-                    </p>
-                    <div class="space-y-2 text-sm mb-6" style="color: #22d3ee;">
-                        <p>⏱️ <span class="font-semibold">時間</span>: 可調戰鬥秒數（5-120秒）</p>
-                        <p>🎯 <span class="font-semibold">目標</span>: 快速點擊角色累積分數</p>
-                        <p>🎨 <span class="font-semibold">風格</span>: 手繪漫畫風格</p>
-                    </div>
-                </div>
-                <a href="funny_sibling_duel.html" class="btn-play text-white font-bold py-3 px-6 rounded-lg w-full text-center inline-block relative z-10" style="background: linear-gradient(135deg, #ff4081 0%, #f50057 100%); border-color: #ff4081;">
-                    開始遊戲 →
-                </a>
-            </div>
-
-            <!-- 遊戲卡片 11: 捷運月台關門夾心 -->
-            <div class="card p-6 flex flex-col">
-                <div class="flex-1">
-                    <div class="game-icon">🚇🚪</div>
-                    <h2 class="text-2xl font-black mb-2" style="color: #22d3ee;">捷運月台：關門夾心大作戰</h2>
-                    <p class="text-sm mb-4 leading-relaxed" style="color: #bae6fd;">
-                        門開就衝、門關別夾！抓準車門時機上車，連站 combo 衝高分。
-                    </p>
-                    <div class="space-y-2 text-sm mb-6" style="color: #22d3ee;">
-                        <p>⏱️ <span class="font-semibold">機制</span>: 時機窗口節奏</p>
-                        <p>🎯 <span class="font-semibold">目標</span>: 通關目標站數</p>
-                        <p>🛠️ <span class="font-semibold">設定</span>: 門開時間 / 人潮密度</p>
-                    </div>
-                </div>
-                <a href="mrt_door_dash.html" class="btn-play text-white font-bold py-3 px-6 rounded-lg w-full text-center inline-block relative z-10" style="background: linear-gradient(135deg, #22d3ee 0%, #3b82f6 100%); border-color: #22d3ee;">
-                    開始遊戲 →
-                </a>
-            </div>
-
-            <!-- 遊戲卡片 12: 電梯按鈕地獄 -->
-            <div class="card p-6 flex flex-col">
-                <div class="flex-1">
-                    <div class="game-icon">🏢🛗</div>
-                    <h2 class="text-2xl font-black mb-2" style="color: #fbbf24;">電梯按鈕地獄</h2>
-                    <p class="text-sm mb-4 leading-relaxed" style="color: #fef3c7;">
-                        亮哪個按哪個！假按鈕干擾、倒數壓力，撐過波次才能順利下樓。
-                    </p>
-                    <div class="space-y-2 text-sm mb-6" style="color: #22d3ee;">
-                        <p>⏱️ <span class="font-semibold">機制</span>: 快速反應辨識</p>
-                        <p>🎯 <span class="font-semibold">目標</span>: 完成目標波次</p>
-                        <p>🛠️ <span class="font-semibold">設定</span>: 反應時限 / 干擾頻率</p>
-                    </div>
-                </div>
-                <a href="elevator_panel_panic.html" class="btn-play text-white font-bold py-3 px-6 rounded-lg w-full text-center inline-block relative z-10" style="background: linear-gradient(135deg, #fbbf24 0%, #f97316 100%); border-color: #fbbf24;">
-                    開始遊戲 →
-                </a>
-            </div>
-
-            <!-- 遊戲卡片 13: 搶充電器 -->
-            <div class="card p-6 flex flex-col">
-                <div class="flex-1">
-                    <div class="game-icon">🔌📱</div>
-                    <h2 class="text-2xl font-black mb-2" style="color: #a78bfa;">搶同一顆充電器</h2>
-                    <p class="text-sm mb-4 leading-relaxed" style="color: #e9d5ff;">
-                        連點拉線搶電量！支援單人 vs AI 或雙人同機對決。
-                    </p>
-                    <div class="space-y-2 text-sm mb-6" style="color: #22d3ee;">
-                        <p>⚔️ <span class="font-semibold">模式</span>: vs AI / 雙人同機</p>
-                        <p>🎯 <span class="font-semibold">目標</span>: 搶滿電量或拖垮對手</p>
-                        <p>🛠️ <span class="font-semibold">設定</span>: 對戰秒數 / AI 強度</p>
-                    </div>
-                </div>
-                <a href="charger_tug_war.html" class="btn-play text-white font-bold py-3 px-6 rounded-lg w-full text-center inline-block relative z-10" style="background: linear-gradient(135deg, #a78bfa 0%, #ec4899 100%); border-color: #a78bfa;">
-                    開始遊戲 →
-                </a>
-            </div>
-
-            <!-- 遊戲卡片 14: 手搖店特調 -->
-            <div class="card p-6 flex flex-col">
-                <div class="flex-1">
-                    <div class="game-icon">🧋✨</div>
-                    <h2 class="text-2xl font-black mb-2" style="color: #f472b6;">手搖店特調：配方記憶</h2>
-                    <p class="text-sm mb-4 leading-relaxed" style="color: #fce7f3;">
-                        記住顧客訂單，依序點選茶底、糖度與配料，連對出杯衝業績！
-                    </p>
-                    <div class="space-y-2 text-sm mb-6" style="color: #22d3ee;">
-                        <p>🧠 <span class="font-semibold">機制</span>: 記憶序列出餐</p>
-                        <p>🎯 <span class="font-semibold">目標</span>: 完成目標杯數</p>
-                        <p>🛠️ <span class="font-semibold">設定</span>: 記憶秒數 / 複雜度</p>
-                    </div>
-                </div>
-                <a href="bubble_tea_memory.html" class="btn-play text-white font-bold py-3 px-6 rounded-lg w-full text-center inline-block relative z-10" style="background: linear-gradient(135deg, #f472b6 0%, #fb923c 100%); border-color: #f472b6;">
-                    開始遊戲 →
-                </a>
-            </div>
-
-            <!-- 遊戲卡片 15: 夜市射氣球 -->
-            <div class="card p-6 flex flex-col">
-                <div class="flex-1">
-                    <div class="game-icon">🏮🎈</div>
-                    <h2 class="text-2xl font-black mb-2" style="color: #f59e0b;">夜市射氣球：蓄力瞄準版</h2>
-                    <p class="text-sm mb-4 leading-relaxed" style="color: #fde68a;">
-                        調角度、蓄力發射！金氣球加倍，炸彈氣球小心別打到。
-                    </p>
-                    <div class="space-y-2 text-sm mb-6" style="color: #22d3ee;">
-                        <p>🎯 <span class="font-semibold">機制</span>: 角度 + 蓄力射擊</p>
-                        <p>🧮 <span class="font-semibold">特色</span>: 風偏 / 移動氣球</p>
-                        <p>📱 <span class="font-semibold">支援</span>: 電腦 / 手機</p>
-                    </div>
-                </div>
-                <a href="night_market_balloon.html" class="btn-play text-white font-bold py-3 px-6 rounded-lg w-full text-center inline-block relative z-10" style="background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%); border-color: #f59e0b;">
-                    開始遊戲 →
-                </a>
-            </div>
-
-            <!-- 遊戲卡片 16: 沙堡抗漲潮 -->
-            <div class="card p-6 flex flex-col">
-                <div class="flex-1">
-                    <div class="game-icon">🏰🌊</div>
-                    <h2 class="text-2xl font-black mb-2" style="color: #38bdf8;">沙堡加蓋：對抗漲潮</h2>
-                    <p class="text-sm mb-4 leading-relaxed" style="color: #e0f2fe;">
-                        堆沙加高、貝殼加固，撐過一波波漲潮與搗蛋螃蟹！
-                    </p>
-                    <div class="space-y-2 text-sm mb-6" style="color: #22d3ee;">
-                        <p>🏖️ <span class="font-semibold">機制</span>: 防守建造</p>
-                        <p>🎯 <span class="font-semibold">目標</span>: 撐過目標波數</p>
-                        <p>🛠️ <span class="font-semibold">設定</span>: 潮汐頻率 / 堆沙效率</p>
-                    </div>
-                </div>
-                <a href="sandcastle_tide.html" class="btn-play text-white font-bold py-3 px-6 rounded-lg w-full text-center inline-block relative z-10" style="background: linear-gradient(135deg, #38bdf8 0%, #fbbf24 100%); border-color: #38bdf8;">
-                    開始遊戲 →
-                </a>
-            </div>
-
-            <!-- 遊戲卡片 17: 黑貓倉儲堆箱 -->
-            <div class="card p-6 flex flex-col">
-                <div class="flex-1">
-                    <div class="game-icon">📦🐈‍⬛</div>
-                    <h2 class="text-2xl font-black mb-2" style="color: #fbbf24;">黑貓倉儲：包裹堆高機</h2>
-                    <p class="text-sm mb-4 leading-relaxed" style="color: #fef3c7;">
-                        對齊堆疊包裹塔，完美對齊加分，歪太多就整塔倒塌！
-                    </p>
-                    <div class="space-y-2 text-sm mb-6" style="color: #22d3ee;">
-                        <p>📦 <span class="font-semibold">機制</span>: 堆疊平衡</p>
-                        <p>🎯 <span class="font-semibold">目標</span>: 堆到目標層數</p>
-                        <p>🛠️ <span class="font-semibold">設定</span>: 速度 / 寬度隨機</p>
-                    </div>
-                </div>
-                <a href="black_cat_stack.html" class="btn-play text-white font-bold py-3 px-6 rounded-lg w-full text-center inline-block relative z-10" style="background: linear-gradient(135deg, #fbbf24 0%, #78716c 100%); border-color: #fbbf24;">
-                    開始遊戲 →
-                </a>
-            </div>
-
-            <!-- 遊戲卡片 18: 廟口鼓點 -->
-            <div class="card p-6 flex flex-col">
-                <div class="flex-1">
-                    <div class="game-icon">🥁🦁</div>
-                    <h2 class="text-2xl font-black mb-2" style="color: #f87171;">廟口陣頭：鼓點跟打</h2>
-                    <p class="text-sm mb-4 leading-relaxed" style="color: #fecaca;">
-                        四軌道節奏跟打！Perfect / Good / Miss，氣勢條拉滿陣頭魂。
-                    </p>
-                    <div class="space-y-2 text-sm mb-6" style="color: #22d3ee;">
-                        <p>🥁 <span class="font-semibold">機制</span>: 節奏音遊（合成鼓聲）</p>
-                        <p>🎯 <span class="font-semibold">目標</span>: 打完曲目衝高分</p>
-                        <p>⌨️ <span class="font-semibold">操作</span>: 點擊或 D/F/J/K</p>
-                    </div>
-                </div>
-                <a href="temple_drum_beat.html" class="btn-play text-white font-bold py-3 px-6 rounded-lg w-full text-center inline-block relative z-10" style="background: linear-gradient(135deg, #ef4444 0%, #fbbf24 100%); border-color: #ef4444;">
-                    開始遊戲 →
-                </a>
-            </div>
-
-            <!-- 遊戲卡片 19: 寄居蟹換殼 -->
-            <div class="card p-6 flex flex-col">
-                <div class="flex-1">
-                    <div class="game-icon">🦀🐚</div>
-                    <h2 class="text-2xl font-black mb-2" style="color: #2dd4bf;">小琉球潮間帶：寄居蟹換殼</h2>
-                    <p class="text-sm mb-4 leading-relaxed" style="color: #ccfbf1;">
-                        在潮間帶格子移動、換大殼、躲浪與海鳥，時限內抵達潮池終點。
-                    </p>
-                    <div class="space-y-2 text-sm mb-6" style="color: #22d3ee;">
-                        <p>🦀 <span class="font-semibold">機制</span>: 網格路徑 + 成長</p>
-                        <p>🎯 <span class="font-semibold">目標</span>: 抵達潮池</p>
-                        <p>🛠️ <span class="font-semibold">設定</span>: 地圖大小 / 浪週期</p>
-                    </div>
-                </div>
-                <a href="liuqiu_hermit_shell.html" class="btn-play text-white font-bold py-3 px-6 rounded-lg w-full text-center inline-block relative z-10" style="background: linear-gradient(135deg, #2dd4bf 0%, #0ea5e9 100%); border-color: #2dd4bf;">
-                    開始遊戲 →
-                </a>
-            </div>
-
-            <!-- 遊戲卡片 20: 小吃攤老闆 -->
-            <div class="card p-6 flex flex-col">
-                <div class="flex-1">
-                    <div class="game-icon">🍳🍢</div>
-                    <h2 class="text-2xl font-black mb-2" style="color: #f59e0b;">小吃攤老闆：一次一份不要改</h2>
-                    <p class="text-sm mb-4 leading-relaxed" style="color: #fef3c7;">
-                        同時服務多位客人！依訂單組食材出餐，逾時離席扣評價。
-                    </p>
-                    <div class="space-y-2 text-sm mb-6" style="color: #22d3ee;">
-                        <p>🍳 <span class="font-semibold">機制</span>: 多訂單時間管理</p>
-                        <p>🎯 <span class="font-semibold">目標</span>: 營業額與好評</p>
-                        <p>🛠️ <span class="font-semibold">設定</span>: 客人數 / 時限 / 菜單</p>
-                    </div>
-                </div>
-                <a href="night_stall_orders.html" class="btn-play text-white font-bold py-3 px-6 rounded-lg w-full text-center inline-block relative z-10" style="background: linear-gradient(135deg, #f59e0b 0%, #ea580c 100%); border-color: #f59e0b;">
-                    開始遊戲 →
-                </a>
-            </div>
-
+        <div id="gamesGrid" class="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+            <!-- 遊戲由 JavaScript 動態渲染 -->
         </div>
 
         <!-- 關於區域 -->
-        <div class="w-full max-w-5xl card section-card p-8 mb-8">
+        <div class="w-full max-w-5xl card p-8 mb-8" style="border-color: rgba(0, 255, 240, 0.25);">
             <h2 class="text-2xl font-bold mb-4" style="color: #facc15;">📖 關於本專案</h2>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
                 <div>
                     <p class="font-semibold mb-2" style="color: #22d3ee;">🛠️ 技術棧</p>
-                    <p style="color: #d1d5f9;">
+                    <p style="color: #cbd5e1;">
                         HTML5 Canvas, Tailwind CSS, 
-                        JavaScript 與 Gemini AI
+                        JavaScript 與 Gemini AI 音效合成
                     </p>
                 </div>
                 <div>
                     <p class="font-semibold mb-2" style="color: #22d3ee;">📱 適配</p>
-                    <p style="color: #d1d5f9;">
+                    <p style="color: #cbd5e1;">
                         完全響應式設計，支援所有現代瀏覽器和行動裝置
                     </p>
                 </div>
                 <div>
                     <p class="font-semibold mb-2" style="color: #22d3ee;">🎨 設計</p>
-                    <p style="color: #d1d5f9;">
-                        現代化UI，流暢動畫，沉浸式遊戲體驗
+                    <p style="color: #cbd5e1;">
+                        現代霓虹UI，流暢微交互動畫，提供沉浸式街機體驗
                     </p>
                 </div>
             </div>
         </div>
 
         <!-- 頁腳 -->
-        <div class="footer">
+        <div class="text-center text-xs text-yellow-500/60 mt-4">
             <p>VibeCoding Arcade © 2026 | All rights reserved</p>
-            <p class="mt-2">Powered by Gemini AI, Visual Studio Code, GitHub Copilot</p>
+            <p class="mt-2">Powered by Gemini AI, Visual Studio Code & GitHub Copilot</p>
         </div>
     </div>
+
+    <!-- 遊戲資料與渲染腳本 -->
+    <script>
+        // 30款小遊戲數據配置
+        const gamesData = [
+            // ================== 原有 20 款遊戲 ==================
+            {
+                id: "CatchCatGames",
+                title: "貓與鼠：藝術大冒險",
+                emoji: "🐱🐭",
+                desc: "在靜謐的午後草坪上展開追逐冒險。操控貓咪捕捉老鼠，躲避障礙收集高分！",
+                time: "自訂 10-120 秒",
+                target: "盡可能多地捕捉老鼠",
+                link: "CatchCatGames.html",
+                color: "#facc15",
+                btnBg: "linear-gradient(135deg, #facc15 0%, #f97316 100%)",
+                category: "action",
+                tags: ["貓", "老鼠", "追逐"]
+            },
+            {
+                id: "SusiRow",
+                title: "櫻花祭特急 - 迴轉壽司",
+                emoji: "🍣🌸",
+                desc: "在櫻花盛開的春日，挑戰限時收集壽司並避開障礙，享受極速迴轉壽司的美味樂趣！",
+                time: "30-120 秒",
+                target: "收集指定數量壽司，避開障礙物",
+                link: "SusiRow.html",
+                color: "#f97316",
+                btnBg: "linear-gradient(135deg, #f97316 0%, #facc15 100%)",
+                category: "culture",
+                tags: ["壽司", "櫻花", "收集"]
+            },
+            {
+                id: "PickRedPocker",
+                title: "撿紅點 - 大正浪漫綺譚",
+                emoji: "🎴🀄",
+                desc: "復古大正浪漫風格的撿紅點紙牌遊戲。與AI對戰，透過經典配對獲取紅色花色分數！",
+                time: "1 / 3 / 5 局制",
+                target: "配對牌組獲取紅色牌分數",
+                link: "PickRedPocker.html",
+                color: "#facc15",
+                btnBg: "linear-gradient(135deg, #facc15 0%, #f97316 100%)",
+                category: "culture",
+                tags: ["紙牌", "撿紅點", "AI對戰", "大正"]
+            },
+            {
+                id: "bondi-vb-toss",
+                title: "夏日邦迪海灘丟水球",
+                emoji: "🏖️💦",
+                desc: "在陽光灑落的邦迪海灘發射水球擊落飛行中的啤酒罐！考驗物理預判與命中率。",
+                time: "自訂設定",
+                target: "命中罐子並刷新最高紀錄",
+                link: "bondi-vb-toss.html",
+                color: "#22d3ee",
+                btnBg: "linear-gradient(135deg, #22d3ee 0%, #38bdf8 100%)",
+                category: "action",
+                tags: ["丟水球", "物理", "沙灘"]
+            },
+            {
+                id: "creeper_run",
+                title: "苦力怕紅綠燈：爆炸版",
+                emoji: "🧨🧟‍♂️",
+                desc: "Minecraft 像素風紅綠燈挑戰。綠燈按住前進，紅燈移動就會瞬間被炸飛！",
+                time: "動態隨機節奏",
+                target: "安全抵達終點線",
+                link: "creeper_run.html",
+                color: "#4de64d",
+                btnBg: "linear-gradient(135deg, #4de64d 0%, #22c55e 100%)",
+                category: "action",
+                tags: ["紅綠燈", "苦力怕", "麥塊", "像素"]
+            },
+            {
+                id: "ender_dragon_sleep",
+                title: "方塊貓咪牧場：終界龍降臨",
+                emoji: "🐉🐱",
+                desc: "點擊生成方塊貓咪，隨著數量增多白晝轉為黑夜，最終引來終界龍慢速降臨送上美夢。",
+                time: "無時限 (5分閒置結算)",
+                target: "召喚鐵巨人與終界龍巡場",
+                link: "ender_dragon_sleep.html",
+                color: "#c084fc",
+                btnBg: "linear-gradient(135deg, #c084fc 0%, #8b5cf6 100%)",
+                category: "culture",
+                tags: ["麥塊", "貓咪", "終界龍", "休閒"]
+            },
+            {
+                id: "chiikawa_weeding_dash",
+                title: "吉伊卡哇：小藍車拔草大衝刺",
+                emoji: "🐱🚙",
+                desc: "五軌道躲避衝刺遊戲。駕駛吉伊小藍車左右避開落雷與怪物，瘋狂割草衝高分數！",
+                time: "限時挑戰",
+                target: "割草並躲避怪物刷新紀錄",
+                link: "chiikawa_weeding_dash.html",
+                color: "#fda4af",
+                btnBg: "linear-gradient(135deg, #fda4af 0%, #fb7185 100%)",
+                category: "action",
+                tags: ["吉伊卡哇", "跑酷", "除草"]
+            },
+            {
+                id: "fat_tail_gecko_race",
+                title: "肥尾守宮的蟲蟲計時賽",
+                emoji: "🦎🐛",
+                desc: "迷宮計時挑戰。操控可愛的豹紋守宮穿梭於隨機迷宮中尋找麵包蟲，手速與記憶力大考驗！",
+                time: "從第一步開始倒數",
+                target: "在時限內找到麵包蟲",
+                link: "fat_tail_gecko_race.html",
+                color: "#fbbf24",
+                btnBg: "linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)",
+                category: "action",
+                tags: ["守宮", "迷宮", "計時"]
+            },
+            {
+                id: "busan_jagalchi_deluxe",
+                title: "釜山大發：札嘎其金網拉霸",
+                emoji: "⚓🐟",
+                desc: "韓式海港風格的九宮格拉霸機。投網捕魚觸發豐富的連線獎勵，體驗釜山大發連勝！",
+                time: "自訂籌碼",
+                target: "達成三連線奪取最高彩金",
+                link: "busan_jagalchi_deluxe.html",
+                color: "#fbbf24",
+                btnBg: "linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)",
+                category: "action",
+                tags: ["拉霸", "釜山", "運氣"]
+            },
+            {
+                id: "funny_sibling_duel",
+                title: "普通兄妹的搞笑對決",
+                emoji: "👦👧",
+                desc: "搞笑漫畫風格的打地鼠遊戲。兄妹二人隨機在9個洞口竄出，快速點擊得分！",
+                time: "自訂 5-120 秒",
+                target: "快速點擊兄妹角色累積分數",
+                link: "funny_sibling_duel.html",
+                color: "#ff4081",
+                btnBg: "linear-gradient(135deg, #ff4081 0%, #f50057 100%)",
+                category: "action",
+                tags: ["打地鼠", "兄妹", "漫畫"]
+            },
+            {
+                id: "mrt_door_dash",
+                title: "捷運月台：關門夾心大作戰",
+                emoji: "🚇🚪",
+                desc: "精準時機判定遊戲。車門開時全力衝刺上車，車門關閉時立即停下，避免被門夾扁扣命！",
+                time: "自訂設定",
+                target: "成功通過目標站數",
+                link: "mrt_door_dash.html",
+                color: "#22d3ee",
+                btnBg: "linear-gradient(135deg, #22d3ee 0%, #3b82f6 100%)",
+                category: "culture",
+                tags: ["捷運", "時機", "生活"]
+            },
+            {
+                id: "elevator_panel_panic",
+                title: "電梯按鈕地獄",
+                emoji: "🏢🛗",
+                desc: "快速反應與辨識。電梯面板上亮起哪個樓層就點哪個，小心干擾按鈕與倒數計時壓力！",
+                time: "動態反應時限",
+                target: "冷靜撐過目標樓層波次",
+                link: "elevator_panel_panic.html",
+                color: "#fbbf24",
+                btnBg: "linear-gradient(135deg, #fbbf24 0%, #f97316 100%)",
+                category: "action",
+                tags: ["電梯", "反應", "反應力"]
+            },
+            {
+                id: "charger_tug_war",
+                title: "雙人低頭族：搶同一個充電器",
+                emoji: "🔌📱",
+                desc: "拔河式連點對抗。連點或長按拉扯 USB 充電線搶電量。支援雙人同機或對抗偷懶 AI！",
+                time: "對戰秒數可調",
+                target: "搶滿自己手機電量或拉垮對方",
+                link: "charger_tug_war.html",
+                color: "#a78bfa",
+                btnBg: "linear-gradient(135deg, #a78bfa 0%, #ec4899 100%)",
+                category: "culture",
+                tags: ["充電器", "雙人", "連點"]
+            },
+            {
+                id: "bubble_tea_memory",
+                title: "手搖店特調：配方記憶",
+                emoji: "🧋✨",
+                desc: "記憶序列點餐。記住客人的特調訂單，依序點選茶底、糖度、冰量與配料，拼出高連擊！",
+                time: "記憶時限可調",
+                target: "精準調製飲料出杯",
+                link: "bubble_tea_memory.html",
+                color: "#f472b6",
+                btnBg: "linear-gradient(135deg, #f472b6 0%, #fb923c 100%)",
+                category: "nightmarket",
+                tags: ["手搖飲", "記憶", "珍珠奶茶"]
+            },
+            {
+                id: "night_market_balloon",
+                title: "夜市射氣球：蓄力瞄準版",
+                emoji: "🏮🎈",
+                desc: "角度與蓄力拋體遊戲。調風偏、按住蓄力發射飛鏢。擊破金色氣球獲高分，避免炸彈氣球！",
+                time: "自訂飛鏢數量",
+                target: "擊破最高分數氣球",
+                link: "night_market_balloon.html",
+                color: "#f59e0b",
+                btnBg: "linear-gradient(135deg, #f59e0b 0%, #ef4444 100%)",
+                category: "nightmarket",
+                tags: ["射氣球", "夜市", "物理", "飛鏢"]
+            },
+            {
+                id: "sandcastle_tide",
+                title: "沙堡加蓋：對抗漲潮",
+                emoji: "🏰🌊",
+                desc: "防守建造小遊戲。在沙灘上堆沙加高沙堡，撿貝殼加固，防禦週期性上漲的海浪沖刷！",
+                time: "潮汐週期可調",
+                target: "撐過目標波數防禦螃蟹",
+                link: "sandcastle_tide.html",
+                color: "#38bdf8",
+                btnBg: "linear-gradient(135deg, #38bdf8 0%, #fbbf24 100%)",
+                category: "action",
+                tags: ["沙堡", "潮汐", "防守"]
+            },
+            {
+                id: "black_cat_stack",
+                title: "黑貓倉儲：包裹堆高機",
+                emoji: "📦🐈‍⬛",
+                desc: "物理平衡堆疊遊戲。看準時機按下按鈕，對齊堆疊左右移動的快遞包裹。歪太多會整塔倒塌！",
+                time: "堆疊層數無限",
+                target: "對齊包裹堆出最高物流塔",
+                link: "black_cat_stack.html",
+                color: "#fbbf24",
+                btnBg: "linear-gradient(135deg, #fbbf24 0%, #78716c 100%)",
+                category: "action",
+                tags: ["堆疊", "平衡", "黑貓"]
+            },
+            {
+                id: "temple_drum_beat",
+                title: "廟口陣頭：鼓點跟打",
+                emoji: "🥁🦁",
+                desc: "四軌道節奏音感音遊。鼓點落下時按下 D/F/J/K 鍵或點擊螢幕，敲響鑼鼓，釋放陣頭魂！",
+                time: "完成樂曲",
+                target: "跟隨節奏獲取最高評分",
+                link: "temple_drum_beat.html",
+                color: "#f87171",
+                btnBg: "linear-gradient(135deg, #ef4444 0%, #fbbf24 100%)",
+                category: "culture",
+                tags: ["音遊", "節奏", "廟會", "陣頭"]
+            },
+            {
+                id: "liuqiu_hermit_shell",
+                title: "小琉球潮間帶：寄居蟹換殼",
+                emoji: "🦀🐚",
+                desc: "網格冒險與路徑成長。操控寄居蟹避開海浪與海鳥，收集更漂亮的貝殼升級，安全抵達潮池。",
+                time: "限時逃離潮間帶",
+                target: "躲避危險抵達終點",
+                link: "liuqiu_hermit_shell.html",
+                color: "#2dd4bf",
+                btnBg: "linear-gradient(135deg, #2dd4bf 0%, #0ea5e9 100%)",
+                category: "action",
+                tags: ["小琉球", "寄居蟹", "網格"]
+            },
+            {
+                id: "night_stall_orders",
+                title: "小吃攤老闆：一次一份不要改",
+                emoji: "🍳🍢",
+                desc: "模擬夜市攤販時間管理。同時服務多位嘴饞的食客，依據訂單需求精確出餐，賺取好評營業額！",
+                time: "自訂打烊時間",
+                target: "累積好評並賺取最多收入",
+                link: "night_stall_orders.html",
+                color: "#f59e0b",
+                btnBg: "linear-gradient(135deg, #f59e0b 0%, #ea580c 100%)",
+                category: "nightmarket",
+                tags: ["小吃攤", "經營", "時間管理"]
+            },
+
+            // ================== 新增 10 款遊戲 ==================
+            {
+                id: "jiufen_gold_mine",
+                title: "九份金礦探險",
+                emoji: "⛏️💰",
+                desc: "踩格子尋寶探險。在深邃礦坑裡挖出黃金與藍寶石，集齊鑰匙搭乘礦車前往更深層！小心塌方！",
+                time: "自訂 15-90 秒",
+                target: "深入地下找尋鑰匙並累積黃金",
+                link: "jiufen_gold_mine.html",
+                color: "#ffd700",
+                btnBg: "linear-gradient(135deg, #ffd700 0%, #ff8c00 100%)",
+                category: "action",
+                tags: ["九份", "挖礦", "踩格子", "尋寶"]
+            },
+            {
+                id: "trash_truck_chase",
+                title: "台灣垃圾車追趕戰",
+                emoji: "🚚🛍️",
+                desc: "歡樂的音樂響起，垃圾車開走啦！切換三車道躲避路上障礙物，預判拋物線將垃圾精準投進車斗！",
+                time: "投完指定袋數",
+                target: "避開馬路障礙並扔進最多垃圾",
+                link: "trash_truck_chase.html",
+                color: "#facc15",
+                btnBg: "linear-gradient(135deg, #facc15 0%, #eab308 100%)",
+                category: "action",
+                tags: ["垃圾車", "跑酷", "投擲", "音樂"]
+            },
+            {
+                id: "tainan_beef_soup",
+                title: "台南牛肉湯火候師",
+                emoji: "🍲🐮",
+                desc: "澆湯熟度模擬。按住按鈕將滾燙高湯澆在鮮牛肉上，恰到好處放餐！太生或燙爛客人會生氣！",
+                time: "自訂 30-120 秒",
+                target: "控制肉質熟度達到完美三分熟",
+                link: "tainan_beef_soup.html",
+                color: "#ef4444",
+                btnBg: "linear-gradient(135deg, #ef4444 0%, #b91c1c 100%)",
+                category: "culture",
+                tags: ["牛肉湯", "台南", "做菜", "時機"]
+            },
+            {
+                id: "prawn_fishing",
+                title: "夜市釣蝦王",
+                emoji: "🎣🦐",
+                desc: "體驗夜市釣蝦場！浮標下沉時點擊拉竿，隨後透過連點平衡線組張力，防止扯斷釣線成功拉起！",
+                time: "自訂 30-120 秒",
+                target: "浮標咬餌拉竿，控制拉力收線",
+                link: "prawn_fishing.html",
+                color: "#06b6d4",
+                btnBg: "linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)",
+                category: "nightmarket",
+                tags: ["釣蝦", "夜市", "拉力平衡", "時機"]
+            },
+            {
+                id: "hot_spring_egg",
+                title: "地熱溫泉煮蛋",
+                emoji: "🥚♨️",
+                desc: "北投地熱谷煮蛋。釋放上升氣流推動竹籃，躲避水底亂流，將蛋置於最佳溫度帶煮熟！",
+                time: "自訂設定時間",
+                target: "利用浮力與重力平衡在黃金熟成帶",
+                link: "hot_spring_egg.html",
+                color: "#f97316",
+                btnBg: "linear-gradient(135deg, #f97316 0%, #ea580c 100%)",
+                category: "action",
+                tags: ["煮蛋", "物理平衡", "北投", "溫泉"]
+            },
+            {
+                id: "scooter_waterfall",
+                title: "台北機車瀑布大合流",
+                emoji: "🛵🚦",
+                desc: "著名的台北大橋交通分流。將不同顏色（紅綠藍）下滑的機車拖曳分流至對應顏色的慢車道。",
+                time: "自訂設定時間",
+                target: "快速將海量機車分類到專用車道",
+                link: "scooter_waterfall.html",
+                color: "#f97316",
+                btnBg: "linear-gradient(135deg, #f97316 0%, #db2777 100%)",
+                category: "culture",
+                tags: ["機車", "瀑布", "交通", "分類"]
+            },
+            {
+                id: "alishan_train",
+                title: "阿里山避障列車",
+                emoji: "🚂🌸",
+                desc: "開動阿里山小火車！點擊粉碎前方的巨石與倒塌木，並拉響蒸汽汽笛嚇跑鐵軌上的黑熊！",
+                time: "直到耐久度耗盡",
+                target: "清除軌道障礙並搭載沿途旅客",
+                link: "alishan_train.html",
+                color: "#f43f5e",
+                btnBg: "linear-gradient(135deg, #f43f5e 0%, #be123c 100%)",
+                category: "culture",
+                tags: ["火車", "阿里山", "點擊障礙", "汽笛"]
+            },
+            {
+                id: "dadaocheng_herbal_scale",
+                title: "大稻埕中藥鋪抓藥秤",
+                emoji: "⚖️🌿",
+                desc: "中藥行重量估算。按住抓藥勺傾倒藥材，目測抓取指定克數，依靠藥秤擺動靜止揭開克數！",
+                time: "抓滿 5 帖藥",
+                target: "手感抓藥，誤差在黃金範圍內",
+                link: "dadaocheng_herbal_scale.html",
+                color: "#d97706",
+                btnBg: "linear-gradient(135deg, #78350f 0%, #451a03 100%)",
+                category: "culture",
+                tags: ["中藥鋪", "大稻埕", "秤重", "物理"]
+            },
+            {
+                id: "pingxi_sky_lantern",
+                title: "平溪天燈祈福飛行",
+                emoji: "🏮🌟",
+                desc: "天燈升空避障。利用熱氣噴射推力控制天燈左右晃動，躲開高壓線路並吸取祝福心願！",
+                time: "熱能消耗完畢為止",
+                target: "躲避電線桿、高壓電與樹木，飛得更高",
+                link: "pingxi_sky_lantern.html",
+                color: "#f97316",
+                btnBg: "linear-gradient(135deg, #f97316 0%, #ea580c 100%)",
+                category: "nightmarket",
+                tags: ["天燈", "平溪", "飛行避障", "物理"]
+            },
+            {
+                id: "night_market_scratch",
+                title: "夜市刮刮樂發財夢",
+                emoji: "🧧🎲",
+                desc: "購買三種刮刮卡，用指尖抹開銀漆兌獎！中獎可玩翻倍骰子對決猜大小，獎金瘋狂加倍！",
+                time: "玩到籌碼歸零為止",
+                target: "刮開圖示對獎，猜骰子雙倍滾動資金",
+                link: "night_market_scratch.html",
+                color: "#fbbf24",
+                btnBg: "linear-gradient(135deg, #fbbf24 0%, #d97706 100%)",
+                category: "nightmarket",
+                tags: ["刮刮樂", "骰子", "夜市", "博弈", "運氣"]
+            }
+        ];
+
+        let activeCategory = 'all';
+
+        // 渲染卡片列表
+        function renderGames(filterText = '') {
+            const grid = document.getElementById('gamesGrid');
+            grid.innerHTML = '';
+
+            const filtered = gamesData.filter(game => {
+                // 分類過濾
+                const matchCategory = activeCategory === 'all' || game.category === activeCategory;
+                // 關鍵字搜尋過濾
+                const matchSearch = filterText === '' || 
+                    game.title.toLowerCase().includes(filterText.toLowerCase()) ||
+                    game.desc.toLowerCase().includes(filterText.toLowerCase()) ||
+                    game.tags.some(t => t.toLowerCase().includes(filterText.toLowerCase()));
+
+                return matchCategory && matchSearch;
+            });
+
+            if (filtered.length === 0) {
+                grid.innerHTML = `
+                    <div class="col-span-full text-center py-12 text-slate-500 font-bold">
+                        沒有找到符合篩選條件的遊戲 👾
+                    </div>
+                `;
+                return;
+            }
+
+            filtered.forEach(game => {
+                const card = document.createElement('div');
+                card.className = 'card p-6 flex flex-col';
+                card.innerHTML = `
+                    <div class="flex-1">
+                        <div class="game-icon">${game.emoji}</div>
+                        <h2 class="text-2xl font-black mb-2" style="color: ${game.color};">${game.title}</h2>
+                        <p class="text-sm mb-4 leading-relaxed text-slate-350" style="color: #cbd5e1;">
+                            ${game.desc}
+                        </p>
+                        <div class="space-y-2 text-sm mb-6 text-cyan-400">
+                            <p>⏱️ <span class="font-semibold text-slate-300">遊戲時間</span>: ${game.time}</p>
+                            <p>🎯 <span class="font-semibold text-slate-300">目標</span>: ${game.target}</p>
+                            <p>📱 <span class="font-semibold text-slate-300">支援</span>: 電腦 / 手機觸控</p>
+                        </div>
+                    </div>
+                    <a href="${game.link}" class="btn-play text-white font-bold py-3 px-6 rounded-lg w-full text-center inline-block relative z-10" 
+                       style="background: ${game.btnBg}; border: 2px solid ${game.color};">
+                        開始遊戲 →
+                    </a>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        // 分類過濾切換
+        function filterCategory(category) {
+            activeCategory = category;
+            
+            // 更新按鈕樣式
+            const tabs = ['all', 'culture', 'nightmarket', 'action'];
+            tabs.forEach(t => {
+                const btn = document.getElementById(`tab-${t}`);
+                if (t === category) {
+                    btn.classList.add('active', 'font-black');
+                    btn.classList.remove('text-cyan-400');
+                } else {
+                    btn.classList.remove('active', 'font-black');
+                    btn.classList.add('text-cyan-400');
+                }
+            });
+
+            // 觸發渲染
+            const searchVal = document.getElementById('searchInput').value;
+            renderGames(searchVal);
+        }
+
+        // 搜尋輸入監聽
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            renderGames(e.target.value);
+        });
+
+        // 初始渲染
+        window.onload = () => {
+            renderGames();
+        };
+    </script>
 </body>
 </html>

@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>夜市釣蝦王 - Ruifeng Prawn Fishing</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            background-color: #030712;
+            color: #f3f4f6;
+            font-family: 'Noto Sans TC', sans-serif;
+            touch-action: none;
+            overflow: hidden;
+        }
+        .glass {
+            background: rgba(17, 24, 39, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(6, 182, 212, 0.25);
+            border-radius: 20px;
+        }
+        .btn-cyan {
+            background: linear-gradient(135deg, #06b6d4, #0891b2);
+            color: #030712;
+            font-weight: 900;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 2px solid #a5f3fc;
+        }
+        .btn-cyan:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(6, 182, 212, 0.35);
+        }
+        canvas {
+            display: block;
+            background: radial-gradient(circle at center, #082f49 0%, #0c4a6e 40%, #0f172a 100%);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+        }
+        /* 綠色張力指示燈 */
+        .tension-green {
+            box-shadow: 0 0 15px #22c55e;
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen p-4">
+
+    <!-- HUD -->
+    <div class="fixed top-4 left-4 right-4 flex justify-between gap-4 pointer-events-none z-10 max-w-lg mx-auto">
+        <!-- 漁獲隻數 -->
+        <div class="glass px-4 py-2 flex items-center gap-3 pointer-events-auto">
+            <span class="text-2xl">🦐</span>
+            <div>
+                <div class="text-[9px] text-cyan-400 font-black uppercase tracking-widest">收穫泰國蝦</div>
+                <div id="scoreLabel" class="text-xl font-black text-cyan-300">0 隻</div>
+            </div>
+        </div>
+        <!-- 總重量 -->
+        <div class="glass px-4 py-2 flex items-center gap-3 pointer-events-auto">
+            <span class="text-2xl">⚖️</span>
+            <div>
+                <div class="text-[9px] text-cyan-400 font-black uppercase tracking-widest">總重量</div>
+                <div id="weightLabel" class="text-xl font-black text-cyan-300">0g</div>
+            </div>
+        </div>
+        <!-- 時間 -->
+        <div class="glass px-4 py-2 flex items-center gap-3 pointer-events-auto">
+            <span class="text-2xl">⏳</span>
+            <div>
+                <div class="text-[9px] text-cyan-400 font-black uppercase tracking-widest">賸餘時間</div>
+                <div id="timerLabel" class="text-xl font-black text-white">60s</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 遊戲主要區域 -->
+    <div class="w-full max-w-2xl flex flex-col items-center gap-4 relative">
+        
+        <!-- 遊戲畫布與拉力計容器 -->
+        <div class="relative w-full flex gap-4 items-center justify-center">
+            
+            <canvas id="gameCanvas" width="700" height="400" class="w-full rounded-3xl border-2 border-cyan-500 shadow-2xl"></canvas>
+
+            <!-- 右側拉力計 (僅在拉魚階段顯示) -->
+            <div id="tensionMeter" class="w-16 h-[380px] bg-slate-900/90 rounded-2xl border-2 border-cyan-500/40 p-2 flex flex-col items-center justify-between opacity-0 transition-opacity duration-300 pointer-events-none">
+                <div class="text-[9px] font-black text-red-500">過大 ⚠️</div>
+                
+                <!-- 拉力槽 -->
+                <div class="relative w-4 flex-1 bg-stone-950 rounded-full my-2 overflow-hidden flex flex-col justify-end border border-slate-800">
+                    <!-- 安全綠區 -->
+                    <div class="absolute bottom-[35%] top-[30%] left-0 right-0 bg-green-500/30 border-y border-green-500/80"></div>
+                    <!-- 當前拉力填滿 -->
+                    <div id="tensionBar" class="w-full bg-cyan-400 transition-all duration-75" style="height: 0%"></div>
+                </div>
+
+                <div class="text-[9px] font-black text-blue-400">太鬆 ⚠️</div>
+            </div>
+        </div>
+
+        <!-- 虛擬按鍵 -->
+        <div class="flex gap-4 w-full max-w-xs justify-center">
+            <button id="actionBtn" class="btn-cyan w-full py-4 rounded-xl text-lg shadow-lg select-none">
+                下竿 🎣
+            </button>
+        </div>
+
+        <div class="text-slate-400 text-xs text-center hidden md:block">
+            點擊「下竿」將浮標投入水池。當浮標 <span class="text-cyan-400 font-bold">下沉 💥</span> 時點擊「拉竿」，並 <span class="text-cyan-400 font-bold">點擊/按住按鈕</span> 將張力維持在綠色區間！
+        </div>
+
+        <!-- 返回選單 -->
+        <button id="inGameResetBtn" class="glass px-4 py-2 text-xs font-bold text-cyan-300 flex items-center gap-1 hover:text-white transition-colors">
+            <span>🏠 返回主選單</span>
+        </button>
+    </div>
+
+    <!-- 選單 Overlay -->
+    <div id="menuOverlay" class="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center z-50 p-6">
+        <div class="glass p-8 rounded-[32px] shadow-2xl max-w-sm w-full text-center border-2 border-cyan-500/50">
+            <div class="text-6xl mb-4 animate-bounce">🎣</div>
+            <h1 class="text-3xl font-black text-cyan-400 mb-2">夜市釣蝦王</h1>
+            <p class="text-slate-300 text-xs mb-6 leading-relaxed">
+                在燈火通明的釣蝦池旁，體驗經典的台灣夜市釣蝦樂趣！下竿後等待蝦子咬餌，當浮標下沉發出波浪時，快速點擊拉竿！拉起後，必須用點擊或按住來調節線組的拉力，使它維持在「綠色安全區間」，完成收線即可釣起大蝦！
+            </p>
+
+            <!-- 設定區 -->
+            <div class="space-y-4 mb-6 bg-slate-950/60 p-4 rounded-2xl border border-cyan-500/20 text-left text-sm">
+                <div class="flex flex-col gap-1">
+                    <div class="flex justify-between font-bold text-cyan-300">
+                        <span>釣蝦時間</span>
+                        <span id="timeValue">60秒</span>
+                    </div>
+                    <input type="range" id="timeSetting" min="30" max="120" step="10" value="60" class="w-full h-1.5 bg-slate-950 rounded-lg appearance-none cursor-pointer accent-cyan-500">
+                </div>
+                <div class="flex flex-col gap-1">
+                    <div class="flex justify-between font-bold text-cyan-300">
+                        <span>蝦子警覺度（咬餌難度）</span>
+                        <span id="difficultyValue">普通</span>
+                    </div>
+                    <input type="range" id="difficultySetting" min="1" max="3" step="1" value="2" class="w-full h-1.5 bg-slate-950 rounded-lg appearance-none cursor-pointer accent-cyan-500">
+                </div>
+            </div>
+
+            <!-- 結算顯示 -->
+            <div id="finalScoreArea" class="hidden mb-6 p-4 bg-cyan-500/10 rounded-2xl border border-cyan-500/30">
+                <p class="text-cyan-400 text-[10px] font-black tracking-wider uppercase mb-1">今日釣蝦成績</p>
+                <p id="finalScore" class="text-4xl font-black text-cyan-300">0 隻</p>
+                <p id="finalWeight" class="text-xs text-cyan-400 font-bold mt-1">總重：0g</p>
+            </div>
+
+            <button id="startBtn" class="btn-cyan w-full py-4 rounded-xl text-lg shadow-lg">
+                開始垂釣
+            </button>
+        </div>
+    </div>
+
+    <!-- Web Audio & Canvas 邏輯 -->
+    <script>
+        const AudioSynth = {
+            ctx: null,
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            },
+            play(type) {
+                this.init();
+                if (!this.ctx) return;
+                
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                if (type === 'cast') {
+                    // 拋線滑音
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(600, now);
+                    osc.frequency.exponentialRampToValueAtTime(150, now + 0.3);
+                    gain.gain.setValueAtTime(0.25, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                    osc.start(now);
+                    osc.stop(now + 0.3);
+                } else if (type === 'bite') {
+                    // 咬餌水花聲
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(100, now);
+                    osc.frequency.exponentialRampToValueAtTime(350, now + 0.2);
+                    gain.gain.setValueAtTime(0.6, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+                    osc.start(now);
+                    osc.stop(now + 0.2);
+                } else if (type === 'fail') {
+                    // 線斷或逃脫
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(220, now);
+                    osc.frequency.linearRampToValueAtTime(50, now + 0.35);
+                    gain.gain.setValueAtTime(0.4, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+                    osc.start(now);
+                    osc.stop(now + 0.35);
+                } else if (type === 'success') {
+                    // 釣起大蝦
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(440, now); // A4
+                    osc.frequency.setValueAtTime(554.37, now + 0.08); // C#5
+                    osc.frequency.setValueAtTime(659.25, now + 0.16); // E5
+                    osc.frequency.setValueAtTime(880, now + 0.24); // A5
+                    gain.gain.setValueAtTime(0.3, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.45);
+                    osc.start(now);
+                    osc.stop(now + 0.45);
+                }
+            }
+        };
+
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        const scoreLabel = document.getElementById('scoreLabel');
+        const weightLabel = document.getElementById('weightLabel');
+        const timerLabel = document.getElementById('timerLabel');
+        
+        const tensionMeter = document.getElementById('tensionMeter');
+        const tensionBar = document.getElementById('tensionBar');
+        const actionBtn = document.getElementById('actionBtn');
+        const inGameResetBtn = document.getElementById('inGameResetBtn');
+
+        const menuOverlay = document.getElementById('menuOverlay');
+        const startBtn = document.getElementById('startBtn');
+        const timeSetting = document.getElementById('timeSetting');
+        const difficultySetting = document.getElementById('difficultySetting');
+        const timeValueDisplay = document.getElementById('timeValue');
+        const difficultyValueDisplay = document.getElementById('difficultyValue');
+
+        const finalScoreArea = document.getElementById('finalScoreArea');
+        const finalScore = document.getElementById('finalScore');
+        const finalWeight = document.getElementById('finalWeight');
+
+        const diffNames = ["容易", "普通", "困難"];
+        difficultySetting.oninput = () => difficultyValueDisplay.innerText = diffNames[difficultySetting.value - 1];
+        timeSetting.oninput = () => timeValueDisplay.innerText = `${timeSetting.value}秒`;
+
+        let isPlaying = false;
+        let score = 0;
+        let totalWeight = 0;
+        let timeLeft = 60;
+        let timerInterval = null;
+        let frameId;
+
+        // 釣魚狀態機： 'idle' (準備下竿), 'waiting' (等待咬餌), 'bite' (魚咬餌瞬間), 'reeling' (正在與蝦搏鬥拉鋸)
+        let fishState = 'idle';
+        let floatX = 350;
+        let floatY = 250;
+        let floatScale = 1;
+        let floatPulse = 0;
+
+        let shrimps = [];
+        let ripples = [];
+        
+        let biteTimer = 0;
+        let biteTargetTime = 0;
+        let targetShrimp = null;
+
+        // 拉鋸張力系統
+        let tension = 0;
+        let reelProgress = 0; // 0 ~ 100
+        let btnIsHeld = false;
+        let difficultyLevel = 2;
+
+        startBtn.onclick = () => {
+            AudioSynth.init();
+            score = 0;
+            totalWeight = 0;
+            timeLeft = parseInt(timeSetting.value);
+            difficultyLevel = parseInt(difficultySetting.value);
+            isPlaying = true;
+            fishState = 'idle';
+            shrimps = [];
+            ripples = [];
+            
+            menuOverlay.classList.add('hidden');
+            actionBtn.innerText = "下竿 🎣";
+            tensionMeter.classList.add('opacity-0');
+
+            // 產生幾隻蝦游來游去
+            for(let i=0; i<6; i++) {
+                shrimps.push(createShrimp());
+            }
+
+            updateHUD();
+            startTimer();
+            animate();
+        };
+
+        inGameResetBtn.onclick = () => {
+            endGame();
+        };
+
+        // 按鈕點擊或長按
+        actionBtn.addEventListener('mousedown', () => { if(fishState==='reeling') btnIsHeld = true; });
+        actionBtn.addEventListener('mouseup', () => { btnIsHeld = false; });
+        actionBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if(fishState==='reeling') btnIsHeld = true;
+        });
+        actionBtn.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            btnIsHeld = false;
+        });
+
+        actionBtn.onclick = () => {
+            if (!isPlaying) return;
+            
+            if (fishState === 'idle') {
+                // 下竿
+                AudioSynth.play('cast');
+                floatX = 200 + Math.random() * 300;
+                floatY = 150 + Math.random() * 150;
+                fishState = 'waiting';
+                actionBtn.innerText = "等待中...";
+                actionBtn.disabled = true;
+                
+                // 決定咬餌時間
+                const minTime = difficultyLevel === 1 ? 60 : difficultyLevel === 2 ? 100 : 150;
+                biteTimer = 0;
+                biteTargetTime = minTime + Math.random() * 120;
+            } else if (fishState === 'bite') {
+                // 成功抓到咬餌時機，進入拉鋸拉魚階段
+                AudioSynth.play('bite');
+                fishState = 'reeling';
+                tension = 45;
+                reelProgress = 0;
+                actionBtn.innerText = "按住控制拉力 ⚙️";
+                tensionMeter.classList.remove('opacity-0');
+            }
+        };
+
+        function moveLane() {} // 占位
+
+        function createShrimp() {
+            return {
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                angle: Math.random() * Math.PI * 2,
+                speed: 0.5 + Math.random() * 1,
+                size: 20 + Math.random() * 10,
+                legWiggle: 0
+            };
+        }
+
+        function startTimer() {
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                if (!isPlaying) return;
+                timeLeft--;
+                timerLabel.innerText = `${timeLeft}s`;
+                if (timeLeft <= 5) {
+                    timerLabel.className = "text-xl font-black text-red-500 animate-pulse";
+                } else {
+                    timerLabel.className = "text-xl font-black text-white";
+                }
+
+                if (timeLeft <= 0) {
+                    endGame();
+                }
+            }, 1000);
+        }
+
+        function updateHUD() {
+            scoreLabel.innerText = `${score} 隻`;
+            weightLabel.innerText = `${totalWeight}g`;
+        }
+
+        function animate() {
+            if (!isPlaying) return;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 繪製微弱的水池波光紋理
+            ctx.fillStyle = 'rgba(8, 47, 73, 0.2)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // 更新並繪製蝦子
+            shrimps.forEach(shrimp => {
+                shrimp.x += Math.cos(shrimp.angle) * shrimp.speed;
+                shrimp.y += Math.sin(shrimp.angle) * shrimp.speed;
+                shrimp.legWiggle += 0.15;
+
+                // 邊緣反彈
+                if (shrimp.x < 20 || shrimp.x > canvas.width - 20) shrimp.angle = Math.PI - shrimp.angle;
+                if (shrimp.y < 20 || shrimp.y > canvas.height - 20) shrimp.angle = -shrimp.angle;
+
+                // 繪製蝦子本體 (🦐 形狀)
+                ctx.save();
+                ctx.translate(shrimp.x, shrimp.y);
+                ctx.rotate(shrimp.angle + Math.PI/2);
+                ctx.font = `${shrimp.size}px serif`;
+                ctx.fillText('🦐', -shrimp.size/2, shrimp.size/2);
+                ctx.restore();
+            });
+
+            // 繪製水波紋漣漪
+            for (let i = ripples.length - 1; i >= 0; i--) {
+                const r = ripples[i];
+                r.radius += r.growth;
+                r.alpha -= 0.02;
+
+                ctx.strokeStyle = `rgba(34, 211, 238, ${r.alpha})`;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(r.x, r.y, r.radius, 0, Math.PI * 2);
+                ctx.stroke();
+
+                if (r.alpha <= 0) {
+                    ripples.splice(i, 1);
+                }
+            }
+
+            // 更新釣魚狀態機
+            if (fishState === 'waiting') {
+                biteTimer++;
+                // 浮標隨水波微微晃動
+                floatPulse = Math.sin(Date.now() * 0.005) * 3;
+                drawFloat(floatX, floatY + floatPulse, 1);
+
+                // 蝦子游向浮標
+                if (biteTimer > biteTargetTime * 0.6 && shrimps.length > 0) {
+                    // 指引最近的一隻蝦游向浮標
+                    const leader = shrimps[0];
+                    const dx = floatX - leader.x;
+                    const dy = floatY - leader.y;
+                    leader.angle = Math.atan2(dy, dx);
+                    leader.speed = 1.8;
+                }
+
+                if (biteTimer >= biteTargetTime) {
+                    // 蝦子咬餌！進入咬餌瞬間 (時機窗口)
+                    AudioSynth.play('bite');
+                    fishState = 'bite';
+                    biteTimer = 0;
+                    // 時機窗口時間：難度越高視窗越短 (1.0s, 0.7s, 0.4s)
+                    biteTargetTime = difficultyLevel === 1 ? 25 : difficultyLevel === 2 ? 18 : 12;
+                    actionBtn.disabled = false;
+                    actionBtn.innerText = "拉竿！🎣";
+                    actionBtn.classList.add('animate-ping');
+                    
+                    // 水花大漣漪
+                    ripples.push({ x: floatX, y: floatY, radius: 5, growth: 3, alpha: 1 });
+                    ripples.push({ x: floatX, y: floatY, radius: 10, growth: 2, alpha: 0.8 });
+                }
+            } else if (fishState === 'bite') {
+                biteTimer++;
+                
+                // 浮標猛烈抖動與下沉
+                floatPulse = (Date.now() % 2 === 0 ? 5 : -5);
+                drawFloat(floatX, floatY + floatPulse + 15, 0.7);
+
+                // 水花連續漣漪
+                if (biteTimer % 3 === 0) {
+                    ripples.push({ x: floatX, y: floatY, radius: 5, growth: 4, alpha: 0.8 });
+                }
+
+                if (biteTimer >= biteTargetTime) {
+                    // 超出咬餌時機，逃跑
+                    AudioSynth.play('fail');
+                    fishState = 'idle';
+                    actionBtn.innerText = "下竿 🎣";
+                    actionBtn.classList.remove('animate-ping');
+                    actionBtn.disabled = false;
+                }
+            } else if (fishState === 'reeling') {
+                actionBtn.classList.remove('animate-ping');
+                // 拉鋸戰中，更新拉力
+                // 難度越高，拉力衰減/增加速度越快
+                const pullPower = difficultyLevel === 1 ? 1.5 : difficultyLevel === 2 ? 2.5 : 3.5;
+                const releaseDrop = difficultyLevel === 1 ? 1 : 1.8 : 2.5;
+
+                if (btnIsHeld) {
+                    tension += pullPower;
+                } else {
+                    tension -= releaseDrop;
+                }
+
+                // 隨機魚的拉扯干擾
+                tension += Math.sin(Date.now() * 0.01) * (difficultyLevel * 1.2);
+
+                // 限制在 0 ~ 100 範圍
+                if (tension < 0) tension = 0;
+                if (tension > 100) tension = 100;
+
+                // 更新拉力計 DOM
+                tensionBar.style.height = `${tension}%`;
+
+                // 判斷是否在安全綠色區間 (30% 到 65%)
+                if (tension >= 30 && tension <= 65) {
+                    tensionBar.style.backgroundColor = '#22c55e'; // 綠色
+                    reelProgress += 0.5; // 進度增加
+                } else {
+                    tensionBar.style.backgroundColor = '#ef4444'; // 紅色
+                    // 處在極限（太緊或太鬆）扣減進度
+                    if (tension > 85 || tension < 15) {
+                        reelProgress -= 0.3;
+                    }
+                }
+
+                if (reelProgress < 0) reelProgress = 0;
+
+                // 繪製拉鋸水花
+                drawFloat(floatX + Math.sin(Date.now()*0.02)*10, floatY + Math.cos(Date.now()*0.02)*10, 0.5);
+                if (Date.now() % 6 === 0) {
+                    ripples.push({
+                        x: floatX + (Math.random()-0.5)*30,
+                        y: floatY + (Math.random()-0.5)*30,
+                        radius: 2, growth: 2, alpha: 0.6
+                    });
+                }
+
+                // 繪製拉鋸進度 (環繞浮標圓環)
+                ctx.strokeStyle = 'rgba(6, 182, 212, 0.4)';
+                ctx.lineWidth = 6;
+                ctx.beginPath();
+                ctx.arc(floatX, floatY, 45, 0, Math.PI * 2);
+                ctx.stroke();
+
+                ctx.strokeStyle = '#06b6d4';
+                ctx.lineWidth = 6;
+                ctx.beginPath();
+                ctx.arc(floatX, floatY, 45, -Math.PI/2, -Math.PI/2 + (Math.PI * 2 * (reelProgress / 100)));
+                ctx.stroke();
+
+                // 判定結果
+                if (reelProgress >= 100) {
+                    // 釣起成功！
+                    AudioSynth.play('success');
+                    score++;
+                    const weight = 150 + Math.floor(Math.random() * 150);
+                    totalWeight += weight;
+                    updateHUD();
+
+                    fishState = 'idle';
+                    actionBtn.innerText = "下竿 🎣";
+                    tensionMeter.classList.add('opacity-0');
+                    btnIsHeld = false;
+
+                    // 濺落彩帶粒子
+                    createSuccessParticles(floatX, floatY);
+                } else if (tension >= 98 || tension <= 2) {
+                    // 線斷或脫鉤，失敗
+                    AudioSynth.play('fail');
+                    fishState = 'idle';
+                    actionBtn.innerText = "下竿 🎣";
+                    tensionMeter.classList.add('opacity-0');
+                    btnIsHeld = false;
+                }
+            } else {
+                // idle 狀態
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(350, 0);
+                ctx.lineTo(350, 100);
+                ctx.stroke();
+            }
+
+            frameId = requestAnimationFrame(animate);
+        }
+
+        // 繪製紅橘相間的浮標
+        function drawFloat(x, y, scale) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.scale(scale, scale);
+
+            // 浮標頂針
+            ctx.fillStyle = '#ef4444';
+            ctx.fillRect(-2, -25, 4, 15);
+
+            // 浮標身 (上橘下白)
+            ctx.fillStyle = '#f97316';
+            ctx.beginPath();
+            ctx.arc(0, -5, 12, Math.PI, 0);
+            ctx.fill();
+
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(0, -5, 12, 0, Math.PI);
+            ctx.fill();
+
+            // 浮標底尖
+            ctx.fillStyle = '#475569';
+            ctx.beginPath();
+            ctx.moveTo(-4, 5);
+            ctx.lineTo(0, 18);
+            ctx.lineTo(4, 5);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        function createSuccessParticles(x, y) {
+            for (let i = 0; i < 20; i++) {
+                ripples.push({
+                    x: x,
+                    y: y,
+                    radius: 5,
+                    growth: 1 + Math.random() * 4,
+                    alpha: 1
+                });
+            }
+        }
+
+        function endGame() {
+            isPlaying = false;
+            cancelAnimationFrame(frameId);
+            clearInterval(timerInterval);
+
+            finalScore.innerText = `${score} 隻`;
+            finalWeight.innerText = `總重：${totalWeight}g`;
+            
+            finalScoreArea.classList.remove('hidden');
+            menuOverlay.classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>

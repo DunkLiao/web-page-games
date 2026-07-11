@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>地熱溫泉煮蛋 - Beitou Hot Spring Egg</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            background-color: #0c0505;
+            color: #fca5a5;
+            font-family: 'Noto Sans TC', sans-serif;
+            touch-action: none;
+            overflow: hidden;
+        }
+        .glass {
+            background: rgba(24, 12, 12, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(239, 107, 68, 0.25);
+            border-radius: 20px;
+        }
+        .btn-orange {
+            background: linear-gradient(135deg, #f97316, #ea580c);
+            color: #ffffff;
+            font-weight: 900;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 2px solid #fdba74;
+        }
+        .btn-orange:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(249, 115, 22, 0.35);
+        }
+        canvas {
+            display: block;
+            background: linear-gradient(to top, #451a03 0%, #1c1917 50%, #0c0a09 100%);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.7);
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen p-4">
+
+    <!-- HUD -->
+    <div class="fixed top-4 left-4 right-4 flex justify-between gap-4 pointer-events-none z-10 max-w-lg mx-auto">
+        <!-- 煮熟顆數 -->
+        <div class="glass px-4 py-2 flex items-center gap-3 pointer-events-auto">
+            <span class="text-2xl">🥚</span>
+            <div>
+                <div class="text-[9px] text-orange-400 font-black uppercase tracking-widest">已煮熟溫泉蛋</div>
+                <div id="scoreLabel" class="text-xl font-black text-orange-300">0 顆</div>
+            </div>
+        </div>
+        <!-- 當前蛋熟度 -->
+        <div class="glass px-4 py-2 flex items-center gap-3 pointer-events-auto">
+            <span class="text-2xl">🌡️</span>
+            <div>
+                <div class="text-[9px] text-orange-400 font-black uppercase tracking-widest">當前熟度</div>
+                <div id="eggProgressLabel" class="text-xl font-black text-yellow-300">0%</div>
+            </div>
+        </div>
+        <!-- 時間 -->
+        <div class="glass px-4 py-2 flex items-center gap-3 pointer-events-auto">
+            <span class="text-2xl">⏳</span>
+            <div>
+                <div class="text-[9px] text-orange-400 font-black uppercase tracking-widest">探險時間</div>
+                <div id="timerLabel" class="text-xl font-black text-white">60s</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 遊戲主要區域 -->
+    <div class="w-full max-w-md flex flex-col items-center gap-4 relative">
+        
+        <canvas id="gameCanvas" width="400" height="500" class="w-full rounded-3xl border-2 border-orange-500 shadow-2xl"></canvas>
+
+        <!-- 虛擬按鍵 -->
+        <button id="steamBtn" class="btn-orange w-full py-5 rounded-2xl text-xl shadow-lg select-none">
+            噴射蒸氣 💨
+        </button>
+
+        <div class="text-slate-400 text-xs text-center hidden md:block">
+            鍵盤操作：按 <span class="text-orange-400 font-bold">空白鍵 (Space)</span> 或 <span class="text-orange-400 font-bold">點擊按鈕</span> 來向上噴射蒸氣，平衡竹籃位置！
+        </div>
+
+        <!-- 返回選單 -->
+        <button id="inGameResetBtn" class="glass px-4 py-2 text-xs font-bold text-orange-300 flex items-center gap-1 hover:text-white transition-colors">
+            <span>🏠 返回主選單</span>
+        </button>
+    </div>
+
+    <!-- 選單 Overlay -->
+    <div id="menuOverlay" class="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center z-50 p-6">
+        <div class="glass p-8 rounded-[32px] shadow-2xl max-w-sm w-full text-center border-2 border-orange-500/50">
+            <div class="text-6xl mb-4 animate-bounce">🥚</div>
+            <h1 class="text-3xl font-black text-orange-400 mb-2">地熱溫泉煮蛋</h1>
+            <p class="text-stone-300 text-xs mb-6 leading-relaxed">
+                來到北投地熱谷溫泉，將新鮮雞蛋放進竹籃中，利用滾燙的溫泉泉水煮蛋！點擊按鈕釋放熱泉蒸氣，把竹籃往上推，將竹籃維持在「最佳烹煮溫度帶（黃色發光區）」。小心水底隨機噴發的過熱滾水與泡泡，會把竹籃沖歪！
+            </p>
+
+            <!-- 設定區 -->
+            <div class="space-y-4 mb-6 bg-stone-950/60 p-4 rounded-2xl border border-orange-500/20 text-left text-sm">
+                <div class="flex flex-col gap-1">
+                    <div class="flex justify-between font-bold text-orange-300">
+                        <span>探險時間</span>
+                        <span id="timeValue">60秒</span>
+                    </div>
+                    <input type="range" id="timeSetting" min="30" max="120" step="10" value="60" class="w-full h-1.5 bg-stone-950 rounded-lg appearance-none cursor-pointer accent-orange-500">
+                </div>
+                <div class="flex flex-col gap-1">
+                    <div class="flex justify-between font-bold text-orange-300">
+                        <span>重力大小</span>
+                        <span id="gravityValue">普通</span>
+                    </div>
+                    <input type="range" id="gravitySetting" min="1" max="3" step="1" value="2" class="w-full h-1.5 bg-stone-950 rounded-lg appearance-none cursor-pointer accent-orange-500">
+                </div>
+            </div>
+
+            <!-- 結算顯示 -->
+            <div id="finalScoreArea" class="hidden mb-6 p-4 bg-orange-500/10 rounded-2xl border border-orange-500/30">
+                <p class="text-orange-400 text-[10px] font-black tracking-wider uppercase mb-1">今日煮熟顆數</p>
+                <p id="finalScore" class="text-4xl font-black text-orange-300">0 顆</p>
+                <p id="finalComment" class="text-xs text-stone-300 font-bold mt-1">評價：溫泉新手</p>
+            </div>
+
+            <button id="startBtn" class="btn-orange w-full py-4 rounded-xl text-lg shadow-lg">
+                開始烹煮
+            </button>
+        </div>
+    </div>
+
+    <!-- Web Audio & Canvas 邏輯 -->
+    <script>
+        const AudioSynth = {
+            ctx: null,
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            },
+            play(type) {
+                this.init();
+                if (!this.ctx) return;
+                
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                if (type === 'steam') {
+                    // 噴射蒸氣聲 (嘶嘶)
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(180, now);
+                    osc.frequency.linearRampToValueAtTime(350, now + 0.15);
+                    gain.gain.setValueAtTime(0.3, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+                    osc.start(now);
+                    osc.stop(now + 0.15);
+                } else if (type === 'success') {
+                    // 蛋煮熟了 (歡快音調)
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(523.25, now);
+                    osc.frequency.setValueAtTime(659.25, now + 0.08);
+                    osc.frequency.setValueAtTime(783.99, now + 0.16);
+                    gain.gain.setValueAtTime(0.35, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+                    osc.start(now);
+                    osc.stop(now + 0.35);
+                } else if (type === 'hit') {
+                    // 撞到頂部岩石或掉入底沸水
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(130, now);
+                    osc.frequency.linearRampToValueAtTime(60, now + 0.25);
+                    gain.gain.setValueAtTime(0.4, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+                    osc.start(now);
+                    osc.stop(now + 0.25);
+                }
+            }
+        };
+
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreLabel = document.getElementById('scoreLabel');
+        const eggProgressLabel = document.getElementById('eggProgressLabel');
+        const timerLabel = document.getElementById('timerLabel');
+
+        const menuOverlay = document.getElementById('menuOverlay');
+        const startBtn = document.getElementById('startBtn');
+        const timeSetting = document.getElementById('timeSetting');
+        const gravitySetting = document.getElementById('gravitySetting');
+        const timeValueDisplay = document.getElementById('timeValue');
+        const gravityValueDisplay = document.getElementById('gravityValue');
+
+        const finalScoreArea = document.getElementById('finalScoreArea');
+        const finalScore = document.getElementById('finalScore');
+        const finalComment = document.getElementById('finalComment');
+        const inGameResetBtn = document.getElementById('inGameResetBtn');
+
+        const steamBtn = document.getElementById('steamBtn');
+
+        const gravityNames = ["低重力", "一般重力", "超重力"];
+        gravitySetting.oninput = () => gravityValueDisplay.innerText = gravityNames[gravitySetting.value - 1];
+        timeSetting.oninput = () => timeValueDisplay.innerText = `${timeSetting.value}秒`;
+
+        let isPlaying = false;
+        let score = 0;
+        let timeLeft = 60;
+        let eggCookProgress = 0; // 0 ~ 100
+        let timerInterval = null;
+        let frameId;
+
+        // 物理參數
+        let basketY = 250;
+        let basketVY = 0;
+        let basketX = 200;
+        let basketVX = 0;
+        const basketSize = 35;
+
+        let gravity = 0.2;
+        let thrust = -4.5;
+
+        // 煮蛋溫度區間 (Y軸)
+        const perfectZoneTop = 180;
+        const perfectZoneBottom = 280;
+
+        let particles = [];
+        let bubbles = [];
+        let geysers = [];
+        let frameCounter = 0;
+
+        startBtn.onclick = () => {
+            AudioSynth.init();
+            score = 0;
+            eggCookProgress = 0;
+            timeLeft = parseInt(timeSetting.value);
+            
+            const gSetting = parseInt(gravitySetting.value);
+            if (gSetting === 1) {
+                gravity = 0.12;
+                thrust = -3.2;
+            } else if (gSetting === 2) {
+                gravity = 0.22;
+                thrust = -4.8;
+            } else {
+                gravity = 0.35;
+                thrust = -6.5;
+            }
+
+            basketY = 220;
+            basketVY = 0;
+            basketX = 200;
+            basketVX = 0;
+
+            particles = [];
+            bubbles = [];
+            geysers = [];
+            isPlaying = true;
+
+            menuOverlay.classList.add('hidden');
+            updateHUD();
+            startTimer();
+            animate();
+        };
+
+        inGameResetBtn.onclick = () => {
+            endGame();
+        };
+
+        // 操作監聽
+        window.addEventListener('keydown', e => {
+            if (e.key === ' ' || e.key === 'ArrowUp') {
+                applyThrust();
+            }
+        });
+
+        steamBtn.onclick = () => {
+            applyThrust();
+        };
+
+        function applyThrust() {
+            if (!isPlaying) return;
+            basketVY = thrust;
+            AudioSynth.play('steam');
+            
+            // 下方噴射蒸氣粒子
+            for (let i = 0; i < 8; i++) {
+                particles.push({
+                    x: basketX + (Math.random() - 0.5) * 20,
+                    y: basketY + 15,
+                    vx: (Math.random() - 0.5) * 4,
+                    vy: 3 + Math.random() * 3,
+                    size: 4 + Math.random() * 6,
+                    color: 'rgba(254, 215, 170, 0.6)',
+                    alpha: 1
+                });
+            }
+        }
+
+        function startTimer() {
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                if (!isPlaying) return;
+                timeLeft--;
+                timerLabel.innerText = `${timeLeft}s`;
+                if (timeLeft <= 5) {
+                    timerLabel.className = "text-xl font-black text-red-500 animate-pulse";
+                } else {
+                    timerLabel.className = "text-xl font-black text-white";
+                }
+
+                if (timeLeft <= 0) {
+                    endGame();
+                }
+            }, 1000);
+        }
+
+        function updateHUD() {
+            scoreLabel.innerText = `${score} 顆`;
+            eggProgressLabel.innerText = `${Math.floor(eggCookProgress)}%`;
+        }
+
+        function animate() {
+            if (!isPlaying) return;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            frameCounter++;
+
+            // 1. 繪製理想烹煮區間 (最佳熟成帶)
+            ctx.fillStyle = 'rgba(234, 179, 8, 0.15)';
+            ctx.fillRect(0, perfectZoneTop, canvas.width, perfectZoneBottom - perfectZoneTop);
+            
+            // 畫出烹煮帶上下紅黃虛線
+            ctx.strokeStyle = '#eab308';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([10, 5]);
+            ctx.beginPath();
+            ctx.moveTo(0, perfectZoneTop);
+            ctx.lineTo(canvas.width, perfectZoneTop);
+            ctx.moveTo(0, perfectZoneBottom);
+            ctx.lineTo(canvas.width, perfectZoneBottom);
+            ctx.stroke();
+            ctx.setLineDash([]); // 還原
+
+            // 烹煮帶發光字樣
+            ctx.fillStyle = 'rgba(254, 240, 138, 0.7)';
+            ctx.font = 'bold 12px sans-serif';
+            ctx.fillText('最佳溫泉煮蛋區 (85℃)', 10, perfectZoneTop + 20);
+
+            // 2. 物理更新竹籃
+            basketVY += gravity;
+            basketY += basketVY;
+            
+            // X軸阻力與晃動
+            basketX += basketVX;
+            basketVX *= 0.95; 
+            basketX += (200 - basketX) * 0.05; // 輕微吸回中央
+
+            // 3. 碰撞檢測：邊界
+            if (basketY < 15) {
+                // 撞擊天花板冷石
+                basketY = 15;
+                basketVY = 1;
+                eggCookProgress = Math.max(0, eggCookProgress - 0.5); // 扣減熟度
+                AudioSynth.play('hit');
+            }
+            if (basketY > canvas.height - 30) {
+                // 掉進底部滾水
+                basketY = canvas.height - 30;
+                basketVY = -2;
+                eggCookProgress = Math.max(0, eggCookProgress - 1); // 大扣減熟度
+                AudioSynth.play('hit');
+                createExplosion(basketX, basketY, '#ea580c');
+            }
+
+            // 4. 判定烹煮進度
+            const basketCenterY = basketY;
+            if (basketCenterY >= perfectZoneTop && basketCenterY <= perfectZoneBottom) {
+                // 在黃金區間
+                eggCookProgress += 0.8;
+                if (eggCookProgress >= 100) {
+                    AudioSynth.play('success');
+                    score++;
+                    eggCookProgress = 0;
+                    createExplosion(basketX, basketY, '#fbbf24');
+                }
+                updateHUD();
+            } else {
+                // 不在區間，緩慢降溫
+                if (eggCookProgress > 0) {
+                    eggCookProgress -= 0.15;
+                    updateHUD();
+                }
+            }
+
+            // 5. 生成與更新泡泡
+            if (frameCounter % 15 === 0) {
+                bubbles.push({
+                    x: Math.random() * canvas.width,
+                    y: canvas.height + 10,
+                    vy: -(1 + Math.random() * 3),
+                    size: 3 + Math.random() * 6
+                });
+            }
+
+            // 6. 生成隨機間歇溫泉噴發
+            if (frameCounter % 180 === 0 && Math.random() > 0.4) {
+                geysers.push({
+                    x: 100 + Math.random() * 200,
+                    y: canvas.height,
+                    width: 40 + Math.random() * 40,
+                    timer: 0,
+                    life: 80
+                });
+            }
+
+            // 更新並繪製溫泉噴發
+            for (let i = geysers.length - 1; i >= 0; i--) {
+                const g = geysers[i];
+                g.timer++;
+
+                // 畫出警示虛線 (噴發前兆)
+                if (g.timer < 30) {
+                    ctx.strokeStyle = 'rgba(239, 68, 68, 0.4)';
+                    ctx.lineWidth = 2;
+                    ctx.setLineDash([5, 5]);
+                    ctx.strokeRect(g.x - g.width/2, 100, g.width, canvas.height - 100);
+                    ctx.setLineDash([]);
+                } else {
+                    // 正式噴發大蒸氣
+                    ctx.fillStyle = 'rgba(254, 215, 170, 0.15)';
+                    ctx.fillRect(g.x - g.width/2, 0, g.width, canvas.height);
+                    
+                    // 噴發粒子
+                    if (frameCounter % 2 === 0) {
+                        particles.push({
+                            x: g.x + (Math.random() - 0.5) * g.width,
+                            y: canvas.height - 20,
+                            vx: (Math.random() - 0.5) * 2,
+                            vy: -(6 + Math.random() * 4),
+                            size: 8 + Math.random() * 12,
+                            color: 'rgba(253, 186, 116, 0.4)',
+                            alpha: 0.8
+                        });
+                    }
+
+                    // 對竹籃施加推力
+                    if (Math.abs(basketX - g.x) < g.width/2 + 20) {
+                        basketVY -= 0.18; // 快速推升
+                        basketVX += (basketX - g.x) * 0.1; // 吹歪
+                    }
+                }
+
+                if (g.timer >= g.life) {
+                    geysers.splice(i, 1);
+                }
+            }
+
+            // 更新泡泡
+            for (let i = bubbles.length - 1; i >= 0; i--) {
+                const b = bubbles[i];
+                b.y += b.vy;
+                
+                // 畫泡泡
+                ctx.strokeStyle = 'rgba(251, 146, 60, 0.3)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.arc(b.x, b.y, b.size, 0, Math.PI * 2);
+                ctx.stroke();
+
+                // 泡泡輕微撞擊竹籃
+                if (Math.abs(b.x - basketX) < 25 && Math.abs(b.y - basketY) < 20) {
+                    basketVX += (b.x > basketX ? -0.5 : 0.5);
+                    bubbles.splice(i, 1);
+                    continue;
+                }
+
+                if (b.y < -10) bubbles.splice(i, 1);
+            }
+
+            // 更新粒子
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.alpha -= 0.03;
+
+                ctx.save();
+                ctx.globalAlpha = p.alpha;
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+
+                if (p.alpha <= 0) particles.splice(i, 1);
+            }
+
+            // 7. 繪製竹籃 🧺 與 雞蛋 🥚
+            ctx.save();
+            ctx.translate(basketX, basketY);
+
+            // 繪製竹編提把
+            ctx.strokeStyle = '#d97706';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(0, -5, 20, Math.PI, 0);
+            ctx.stroke();
+
+            // 繪製竹籃主體
+            ctx.fillStyle = '#b45309';
+            ctx.beginPath();
+            ctx.ellipse(0, 5, 24, 15, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#d97706';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // 繪製裡面的雞蛋 (隨熟度從白轉淺褐)
+            ctx.fillStyle = `rgb(${255 - (eggCookProgress*0.5)}, ${255 - (eggCookProgress*0.8)}, ${255 - (eggCookProgress*0.9)})`;
+            
+            // 繪製一顆豎立著的雞蛋
+            ctx.beginPath();
+            ctx.ellipse(-8, -2, 7, 10, -0.2, 0, Math.PI*2);
+            ctx.ellipse(8, -4, 6, 9, 0.2, 0, Math.PI*2);
+            ctx.fill();
+
+            ctx.restore();
+
+            frameId = requestAnimationFrame(animate);
+        }
+
+        function createExplosion(x, y, color) {
+            for (let i = 0; i < 12; i++) {
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: (Math.random() - 0.5) * 5,
+                    vy: (Math.random() - 0.5) * 5 - 2,
+                    size: 4 + Math.random() * 6,
+                    color: color,
+                    alpha: 1
+                });
+            }
+        }
+
+        function endGame() {
+            isPlaying = false;
+            cancelAnimationFrame(frameId);
+            clearInterval(timerInterval);
+
+            finalScore.innerText = `${score} 顆`;
+            
+            let comment = "有潛力！溫泉煮蛋熟度控制不易！🥚";
+            if (score >= 8) {
+                comment = "煮蛋大師！完美的溫泉蛋口感！🥇";
+            } else if (score >= 4) {
+                comment = "熟練店員！完美的半熟蛋愛好者！👍";
+            }
+            finalComment.innerText = `評價：${comment}`;
+
+            finalScoreArea.classList.remove('hidden');
+            menuOverlay.classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
